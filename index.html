@@ -321,10 +321,23 @@
       </div>
 
       <div class="card">
-        <h2>시점별 강도 패턴 <span style="font-weight:400;color:var(--faint);font-size:12px">· 최근 7일 평균</span></h2>
-        <p class="hint">기상직후→오전→오후→취침전 강도 흐름. 입력된 시점만 평균에 반영됩니다.</p>
-        <div class="legend"><span><i style="background:var(--good)"></i>왼팔</span><span><i style="background:var(--warn)"></i>오른팔</span></div>
+        <h2>일별 시점별 강도 추세</h2>
+        <p class="hint">기상직후·오전·오후·취침전 강도가 날짜별로 어떻게 변하는지 (양팔 중 최고값, 0.5 단위).</p>
+        <div class="legend">
+          <span><i style="background:#2F8F7E"></i>기상직후</span>
+          <span><i style="background:#3B6EA5"></i>오전</span>
+          <span><i style="background:#C2622F"></i>오후</span>
+          <span><i style="background:#8A6BB0"></i>취침전</span>
+        </div>
         <svg id="tpChart" viewBox="0 0 640 220"></svg>
+      </div>
+
+      <div class="card">
+        <h2>일별 증상 범위 <span style="font-weight:400;color:var(--faint);font-size:12px">· 넓어지는지 / 좁아지는지</span></h2>
+        <p class="hint">증상이 있는 가장 가까운 지점과 가장 먼 지점. 두 선의 간격이 <b>벌어지면 범위 확대(주의)</b>, <b>좁아지면 호전</b>.</p>
+        <div class="legend"><span><i style="background:var(--warn)"></i>가장 먼 지점</span><span><i style="background:var(--good)"></i>가장 가까운 지점</span></div>
+        <svg id="rangeChart" viewBox="0 0 640 220"></svg>
+        <div class="axis-note"><span>아래 = 중심화</span><span>위 = 말초</span></div>
       </div>
 
       <div class="card">
@@ -511,7 +524,7 @@ function renderTp(){ensureTp();const body=document.getElementById("tpBody");
   spots.forEach(sp=>{const v=(tpData[curTp]&&tpData[curTp][sp.id]!=null)?tpData[curTp][sp.id]:0;
     const row=document.createElement("div");row.className="srow";
     row.innerHTML=`<div class="sinfo"><div class="sloc">${sp.side} · ${sp.loc}</div><div class="smeta">${sp.quality||"성질 미정"}</div></div>
-      <input type="range" min="0" max="10" value="${v}"><span class="sval ${v>0?'on':''}">${v}</span>`;
+      <input type="range" min="0" max="10" step="0.5" value="${v}"><span class="sval ${v>0?'on':''}">${v}</span>`;
     const range=row.querySelector("input"),val=row.querySelector(".sval");
     range.oninput=()=>{const n=+range.value;val.textContent=n;val.classList.toggle("on",n>0);
       if(!tpData[curTp])tpData[curTp]={};spots.forEach(s=>{if(tpData[curTp][s.id]==null)tpData[curTp][s.id]=0;});
@@ -613,15 +626,37 @@ function lineChart(svgId,series,yMax,rankLabels,xLabels){
   const dts=sortedDates();
   const idxs=xLabels?xLabels.map((_,i)=>i):(dts.length<=5?dts.map((_,i)=>i):[0,Math.floor(dts.length/2),dts.length-1]);
   idxs.forEach(idx=>{const lab=xLabels?xLabels[idx]:dts[idx].slice(5);svg.insertAdjacentHTML('beforeend',`<text x="${x(idx)}" y="${H-8}" text-anchor="middle" fill="#A7B2AE" font-size="11">${lab}</text>`);});}
+function dayTpIntensity(e,tpKey){
+  const tp=(e.timepoints||{})[tpKey];if(!tp)return null;
+  const spots=[...((e.spots||{}).left||[]),...((e.spots||{}).right||[])];
+  let m=null;spots.forEach(s=>{const v=(tp.vals||{})[s.id];if(v!=null){m=(m==null)?v:Math.max(m,v);}});return m;}
+function dayRange(e){
+  // min & max rank among spots active (intensity>0) at any timepoint that day; both arms combined
+  const spots=[...((e.spots||{}).left||[]),...((e.spots||{}).right||[])];
+  let mn=null,mx=null;
+  spots.forEach(s=>{let active=false;
+    Object.values(e.timepoints||{}).forEach(tp=>{if((tp.vals||{})[s.id]>0)active=true;});
+    if(active||(!Object.keys(e.timepoints||{}).length)){
+      const L=LOCS.find(l=>l.n===s.loc);const r=L?L.r:0;
+      mn=(mn==null)?r:Math.min(mn,r);mx=(mx==null)?r:Math.max(mx,r);}});
+  return {min:mn,max:mx};
+}
 function drawCharts(){const dts=sortedDates();
   lineChart('farChart',[{color:'#2F8F7E',data:dts.map(d=>farRankForDay(LOG[d],'left'))},
     {color:'#C2622F',data:dts.map(d=>farRankForDay(LOG[d],'right'))}],8,true,null);
-  const recent=dts.slice(-7);
-  function avgTp(side,k){let sum=0,cnt=0;recent.forEach(d=>{const e=LOG[d];const tp=(e.timepoints||{})[k];if(!tp)return;
-    const spots=((e.spots||{})[side])||[];if(!spots.length)return;let dmax=0,any=false;
-    spots.forEach(s=>{const v=(tp.vals||{})[s.id];if(v!=null){dmax=Math.max(dmax,v);any=true;}});if(any){sum+=dmax;cnt++;}});return cnt?+(sum/cnt).toFixed(1):null;}
-  lineChart('tpChart',[{color:'#2F8F7E',data:TPS.map(t=>avgTp('left',t.k))},
-    {color:'#C2622F',data:TPS.map(t=>avgTp('right',t.k))}],10,false,TPS.map(t=>t.n));}
+  // daily per-timepoint intensity trend (4 lines over dates)
+  lineChart('tpChart',[
+    {color:'#2F8F7E',data:dts.map(d=>dayTpIntensity(LOG[d],'morning'))},
+    {color:'#3B6EA5',data:dts.map(d=>dayTpIntensity(LOG[d],'forenoon'))},
+    {color:'#C2622F',data:dts.map(d=>dayTpIntensity(LOG[d],'afternoon'))},
+    {color:'#8A6BB0',data:dts.map(d=>dayTpIntensity(LOG[d],'night'))}
+  ],10,false,null);
+  // daily symptom range (nearest & furthest affected point)
+  lineChart('rangeChart',[
+    {color:'#C2622F',data:dts.map(d=>{const r=dayRange(LOG[d]);return r.max;})},
+    {color:'#2F8F7E',data:dts.map(d=>{const r=dayRange(LOG[d]);return r.min;})}
+  ],8,true,null);
+}
 
 function renderDateStrip(){const box=document.getElementById('dateStrip');const dates=sortedDates().reverse();
   if(dates.length===0){box.innerHTML='<div class="empty">기록이 없습니다.</div>';return;}
