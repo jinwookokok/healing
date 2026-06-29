@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>경추 증상 기록</title>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F4F6F6;--card:#FFFFFF;--ink:#19231F;--muted:#5C6B66;--faint:#8A9893;
+    --line:#E3E8E6;--line-soft:#EEF1F0;
+    --good:#2F8F7E;--good-soft:#E7F2EF;--warn:#C2622F;--warn-soft:#F8ECE2;
+    --alert:#B23A2E;--alert-soft:#FBEAE7;--accent:#2F8F7E;--radius:12px;
+    font-family:"Pretendard","Pretendard Variable",-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased}
+  body{line-height:1.6;padding:0 18px 90px;font-size:15px}
+  .wrap{max-width:1340px;margin:0 auto}
+  header{padding:24px 0 12px}
+  .kicker{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);font-weight:600}
+  h1{font-size:25px;font-weight:700;letter-spacing:-.01em;margin-top:6px}
+  .sub{color:var(--muted);font-size:13.5px;margin-top:8px;max-width:70ch}
+  .disclaimer{background:var(--card);border:1px solid var(--line);border-left:3px solid var(--muted);border-radius:10px;padding:11px 14px;margin-top:14px;font-size:12.5px;color:var(--muted)}
+
+  /* split layout */
+  .layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px;align-items:start;margin-top:16px}
+  @media (max-width:1000px){.layout{grid-template-columns:1fr}}
+  .col-trend{position:sticky;top:14px}
+  @media (max-width:1000px){.col-trend{position:static}}
+  .colhead{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);font-weight:700;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+  .colhead .auto{margin-left:auto;font-size:11.5px;letter-spacing:0;text-transform:none;color:var(--faint);font-weight:600}
+
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:18px;margin-bottom:14px}
+  .card h2{font-size:13px;letter-spacing:.02em;font-weight:700;margin-bottom:2px;display:flex;align-items:center;gap:8px}
+  .card .hint{font-size:12px;color:var(--faint);margin-bottom:14px}
+  .num-tag{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:6px;background:var(--good-soft);color:var(--good);font-size:11px;font-weight:700}
+  .datebar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px}
+  .datebar label{font-size:12.5px;color:var(--muted);font-weight:600}
+  input[type=date]{font-family:inherit;font-size:14px;border:1px solid var(--line);border-radius:8px;padding:8px 10px;color:var(--ink);background:var(--card)}
+  .field{margin-bottom:16px}.field:last-child{margin-bottom:0}
+  .field>label{display:block;font-size:13.5px;font-weight:600;margin-bottom:8px}
+  .field .micro{font-weight:400;color:var(--faint);font-size:12px}
+  .slider-row{display:flex;align-items:center;gap:12px}
+  input[type=range]{flex:1;accent-color:var(--accent);height:4px}
+  .val{min-width:30px;text-align:center;font-variant-numeric:tabular-nums;font-weight:700;font-size:15px;background:var(--good-soft);color:var(--good);border-radius:7px;padding:3px 0}
+  select,textarea,input[type=number]{font-family:inherit;font-size:14px;width:100%;border:1px solid var(--line);border-radius:8px;padding:9px 10px;color:var(--ink);background:var(--card)}
+  textarea{resize:vertical;min-height:64px}
+  .arms2{display:grid;grid-template-columns:1fr 1fr;gap:12px}@media (max-width:560px){.arms2{grid-template-columns:1fr}}
+  .arm{border:1px solid var(--line-soft);border-radius:10px;padding:14px;background:#FCFDFD}
+  .arm h3{font-size:13.5px;font-weight:700;margin-bottom:10px}
+  .reggrid{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px}
+  .regbtn{border:1px solid var(--line);background:var(--card);color:var(--muted);font-family:inherit;font-size:12.5px;padding:7px 11px;border-radius:8px;cursor:pointer;transition:.12s;display:flex;align-items:center;gap:5px}
+  .regbtn:hover{border-color:var(--accent)}
+  .regbtn.sel{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .regbtn.sel::before{content:"✓";font-size:11px}
+  .regnote{font-size:11px;color:var(--faint);margin-bottom:10px}
+  .spotcard{border:1px solid var(--line);border-radius:9px;padding:10px 11px;margin-bottom:7px;background:var(--card);position:relative}
+  .spotcard .stitle{font-size:13px;font-weight:700;margin-bottom:7px}
+  .spotcard .rmx{position:absolute;top:7px;right:8px;border:0;background:none;color:var(--faint);font-size:16px;cursor:pointer;line-height:1;padding:2px 5px;border-radius:6px}
+  .spotcard .rmx:hover{background:var(--alert-soft);color:var(--alert)}
+  .qchips{display:flex;flex-wrap:wrap;gap:5px}
+  .qchip{border:1px solid var(--line);background:var(--card);color:var(--muted);font-size:12px;padding:5px 10px;border-radius:16px;cursor:pointer;font-family:inherit;transition:.1s}
+  .qchip.on{background:var(--good-soft);color:var(--good);border-color:var(--good)}
+  .nospot{font-size:12px;color:var(--faint);padding:4px 0}
+  .tptabs{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap}
+  .tptab{flex:1;min-width:80px;border:1px solid var(--line);background:var(--card);border-radius:10px;padding:9px 6px;cursor:pointer;text-align:center;transition:.12s}
+  .tptab.active{border-color:var(--accent);background:var(--good-soft)}
+  .tptab .tpname{font-size:13px;font-weight:700;color:var(--ink)}
+  .tptab .tpstate{font-size:10.5px;color:var(--faint);margin-top:2px}
+  .tptab.filled .tpstate{color:var(--good)}
+  .tptime{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);margin-bottom:14px}
+  .tptime input[type=time]{font-family:inherit;font-size:13px;border:1px solid var(--line);border-radius:7px;padding:5px 8px}
+  .srow{display:flex;align-items:center;gap:14px;padding:11px 0;border-bottom:1px solid var(--line-soft)}
+  .srow:last-child{border-bottom:0}
+  .sinfo{flex:1;min-width:0}.sinfo .sloc{font-size:13.5px;font-weight:600}.sinfo .smeta{font-size:11.5px;color:var(--faint)}
+  .srow input[type=range]{flex:1.4;max-width:220px}
+  .srow .sval{min-width:34px;text-align:center;font-variant-numeric:tabular-nums;font-weight:700;font-size:14px;border-radius:7px;padding:3px 0;background:#EEF1F0;color:var(--muted)}
+  .srow .sval.on{background:var(--good-soft);color:var(--good)}
+  .defineNote{font-size:12.5px;color:var(--faint);text-align:center;padding:18px 8px}
+  .chips{display:flex;flex-wrap:wrap;gap:7px}
+  .chip{position:relative}.chip input{position:absolute;opacity:0;width:0;height:0}
+  .chip span{display:inline-block;border:1px solid var(--line);border-radius:20px;padding:6px 12px;font-size:13px;color:var(--muted);cursor:pointer;transition:.12s;user-select:none}
+  .chip input:checked + span{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .flag{display:flex;align-items:flex-start;gap:10px;padding:11px 12px;border:1px solid var(--line);border-radius:9px;margin-bottom:8px;cursor:pointer;transition:.12s;background:var(--card)}
+  .flag:last-child{margin-bottom:0}
+  .flag input{margin-top:3px;width:17px;height:17px;accent-color:var(--alert);flex-shrink:0}
+  .flag .ft{font-size:13.5px;font-weight:600}.flag .fd{font-size:12px;color:var(--faint);margin-top:1px}
+  .flag.on{border-color:var(--alert);background:var(--alert-soft)}
+  .alert-banner{display:none;background:var(--alert-soft);border:1px solid var(--alert);color:#7A241B;border-radius:10px;padding:13px 15px;margin-top:14px;font-size:13px}
+  .alert-banner.show{display:block}.alert-banner b{color:var(--alert)}
+  .save{margin-top:16px}
+  .btn{width:100%;border:0;background:var(--accent);color:#fff;font-weight:700;font-size:15px;font-family:inherit;padding:13px;border-radius:11px;cursor:pointer;box-shadow:0 4px 14px rgba(47,143,126,.28);transition:.15s}
+  .btn:active{transform:translateY(1px)}
+  .btn.ghost{background:var(--card);color:var(--ink);border:1px solid var(--line);box-shadow:none}
+  .saved-note{text-align:center;font-size:12.5px;color:var(--good);margin-top:10px;min-height:18px;font-weight:600}
+  .legend{display:flex;gap:16px;font-size:12px;color:var(--muted);margin-bottom:6px;flex-wrap:wrap}
+  .legend i{display:inline-block;width:18px;height:3px;border-radius:2px;vertical-align:middle;margin-right:5px}
+  .axis-note{font-size:11.5px;color:var(--faint);display:flex;justify-content:space-between;margin-top:4px}
+  svg{display:block;width:100%;height:auto}
+  .empty{text-align:center;color:var(--faint);font-size:13.5px;padding:24px 10px}
+  .modegrid{display:flex;flex-wrap:wrap;gap:14px}
+  .modeitem{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--ink)}
+  .modeitem input{width:62px;padding:7px 8px;text-align:center}
+  .modeitem .mu{color:var(--faint);font-size:12px}
+  .sleeprow{display:flex;flex-wrap:wrap;gap:14px;align-items:center;margin-bottom:10px}
+  .sl{display:flex;align-items:center;gap:7px}
+  .sllab{font-size:12.5px;color:var(--muted);font-weight:600}
+  .sleeprow input[type=time]{font-family:inherit;font-size:13px;border:1px solid var(--line);border-radius:7px;padding:6px 8px}
+  .sleeptotal{font-weight:700;color:var(--good);font-size:13.5px}
+  .qual-chips{display:flex;flex-wrap:wrap;gap:6px}
+  .datestrip{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;margin-bottom:12px}
+  .dchip{flex:0 0 auto;border:1px solid var(--line);background:var(--card);border-radius:9px;padding:7px 11px;cursor:pointer;text-align:center;transition:.1s;min-width:60px}
+  .dchip:hover{border-color:var(--accent)}
+  .dchip.sel{background:var(--good-soft);border-color:var(--good)}
+  .dchip .dd{font-size:12.5px;font-weight:700}
+  .dchip .dtag{font-size:10px;color:var(--faint)}
+  .dchip .dtag.alert{color:var(--alert);font-weight:700}
+  .mtable{width:100%;border-collapse:collapse;font-size:12.5px;margin-bottom:12px}
+  .mtable th,.mtable td{border:1px solid var(--line-soft);padding:6px 8px;text-align:center}
+  .mtable th{background:#FAFBFB;font-weight:700;color:var(--muted)}
+  .mtable th.unfilled{color:var(--faint);font-weight:400}
+  .mtable td.loccell{text-align:left;font-weight:600}
+  .mtable td.unfilled{color:var(--faint);background:#FAFBFB}
+  .mtable td .qm{font-weight:400;color:var(--faint);font-size:11px}
+  .mtable td.v0{color:var(--faint)}.mtable td.vp{color:var(--good);font-weight:700}
+  .dsection{font-size:12.5px;color:var(--muted);margin-bottom:7px}.dsection b{color:var(--ink)}
+  .dflags{background:var(--alert-soft);border:1px solid var(--alert);color:#7A241B;border-radius:9px;padding:9px 12px;font-size:12.5px;margin:8px 0}
+  .ddel{margin-top:8px;background:none;border:1px solid var(--line);color:var(--alert);font-size:12.5px;font-family:inherit;padding:7px 12px;border-radius:8px;cursor:pointer}
+  .ddel:hover{background:var(--alert-soft)}
+  .toolrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+  .toolrow .btn{flex:1;min-width:130px;padding:11px;font-size:13.5px}
+  .export-area{width:100%;min-height:220px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;border:1px solid var(--line);border-radius:10px;padding:14px;color:var(--ink);background:#FBFCFC;line-height:1.7;margin-top:10px}
+  .storewarn{display:none;background:var(--warn-soft);border:1px solid #E2B894;color:#7a4a25;border-radius:9px;padding:10px 13px;font-size:12.5px;margin-top:12px}
+  .storewarn.show{display:block}
+  details.tools summary{cursor:pointer;font-size:13px;font-weight:700;color:var(--muted);list-style:none;display:flex;align-items:center;gap:6px}
+  details.tools summary::-webkit-details-marker{display:none}
+  details.tools summary::before{content:"▸";transition:.15s}
+  details.tools[open] summary::before{transform:rotate(90deg)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="kicker">Cervical Symptom Diary</div>
+    <h1>경추 증상 기록</h1>
+    <p class="sub">왼쪽에서 입력하면 오른쪽 추세·상세가 즉시 갱신됩니다. 입력하는 순간 자동 저장되고, 안 누른 시점은 "미입력"으로 남습니다.</p>
+    <div class="disclaimer">이 기록은 진단 도구가 아니라 <b>추적·소통용</b>입니다. 판단은 진욱님의 MRI를 직접 본 의료진이 합니다. 기록을 진료 때 그대로 보여주세요.</div>
+  </header>
+
+  <div class="layout">
+
+    <!-- ============ LEFT: INPUT ============ -->
+    <div class="col-input" id="today">
+      <div class="colhead">입력<span class="auto" id="autoState">자동 저장</span></div>
+
+      <div class="card">
+        <div class="datebar">
+          <label for="entryDate">기록 날짜</label>
+          <input type="date" id="entryDate">
+        </div>
+
+        <h2><span class="num-tag">1</span> 오늘의 증상 지점 정의 <span style="font-weight:400;color:var(--faint);font-size:12px">· 하루 1번</span></h2>
+        <p class="hint">부위 버튼을 눌러 선택하세요. 선택된 부위는 ✓ 로 표시돼 중복 없이 고를 수 있습니다.</p>
+        <div class="arms2">
+          <div class="arm" data-side="left">
+            <h3>왼팔 · 왼손</h3>
+            <div class="reggrid" data-grid="left"></div>
+            <div class="regnote">선택한 부위는 아래에서 성질을 정하세요.</div>
+            <div class="spotedit" data-edit="left"></div>
+          </div>
+          <div class="arm" data-side="right">
+            <h3>오른팔 · 오른손</h3>
+            <div class="reggrid" data-grid="right"></div>
+            <div class="regnote">증상이 없으면 비워두세요.</div>
+            <div class="spotedit" data-edit="right"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2><span class="num-tag">2</span> 시점별 강도 체크</h2>
+        <p class="hint">입력한 시점만 기록됩니다. 안 누른 시점은 "미입력"으로 남습니다.</p>
+        <div class="tptabs" id="tpTabs"></div>
+        <div class="tptime"><span>이 시점 시각</span><input type="time" id="tpTime"><span class="micro" style="color:var(--faint)">(선택)</span></div>
+        <div id="tpBody"></div>
+      </div>
+
+      <div class="card">
+        <h2><span class="num-tag">3</span> 연관통 · 근육·뻐근함 <span style="font-weight:400;color:var(--faint);font-size:12px">· 하루 1번</span></h2>
+        <p class="hint">목·어깨·승모·견갑·윗등의 그날 전반적 뻐근함 (0 없음 — 10 심함)</p>
+        <div id="referredSliders"></div>
+        <div class="field" style="margin-top:6px">
+          <label>아침에 일어났을 때 이 부위들의 통증은?</label>
+          <div class="chips" style="gap:8px">
+            <label class="chip"><input type="radio" name="morning" value="거의 없음"><span>거의 없음</span></label>
+            <label class="chip"><input type="radio" name="morning" value="약간"><span>약간</span></label>
+            <label class="chip"><input type="radio" name="morning" value="평소와 비슷"><span>평소와 비슷</span></label>
+            <label class="chip"><input type="radio" name="morning" value="더 심함"><span>더 심함</span></label>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2><span class="num-tag">4</span> 신전운동 · 척추위생 <span style="font-weight:400;color:var(--faint);font-size:12px">· 하루 1번</span></h2>
+        <div class="arms2">
+          <div class="field"><label>오늘 신전운동</label>
+            <select id="extDone"><option value="안 함">안 함</option><option value="함">함</option></select></div>
+          <div class="field"><label>척추위생 유지 <span class="micro">0–10</span></label>
+            <input type="number" id="hygiene" min="0" max="10" placeholder="0"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2 style="color:var(--alert)">⚠ 경고 신호 점검 <span style="font-weight:400;color:var(--faint);font-size:12px">· 하루 1번</span></h2>
+        <p class="hint">신경뿌리를 넘어 <b>척수(myelopathy)</b> 문제를 시사할 수 있는 신호입니다. 하나라도 새로 생기거나 나빠지면 미루지 마세요.</p>
+        <div id="flags">
+          <label class="flag"><input type="checkbox" value="손 미세동작 둔해짐"><div><div class="ft">손 미세동작이 둔해짐</div><div class="fd">단추 끼우기·젓가락질·글씨가 어색하거나 서툴러짐</div></div></label>
+          <label class="flag"><input type="checkbox" value="물건을 자주 떨어뜨림"><div><div class="ft">물건을 자주 떨어뜨림</div><div class="fd">손에 힘이 빠지거나 쥐는 감각이 둔함</div></div></label>
+          <label class="flag"><input type="checkbox" value="걸음·균형 이상"><div><div class="ft">걸음·균형이 달라짐</div><div class="fd">발이 헛디뎌지거나 균형 잡기가 전과 다름</div></div></label>
+          <label class="flag"><input type="checkbox" value="양손 저림 동시 악화"><div><div class="ft">양손 저림이 동시에 악화</div><div class="fd">한쪽이 아니라 양손이 함께 나빠짐</div></div></label>
+          <label class="flag"><input type="checkbox" value="다리 저림·위약·감각이상"><div><div class="ft">다리에 저림·힘빠짐·감각 이상</div><div class="fd">팔뿐 아니라 다리로 증상이 내려옴</div></div></label>
+          <label class="flag"><input type="checkbox" value="대소변 조절 문제"><div><div class="ft">대소변 조절이 평소와 다름</div><div class="fd">이 신호는 즉시 응급 진료를 고려해야 합니다</div></div></label>
+        </div>
+        <div class="alert-banner" id="alertBanner"><b>이 신호는 그냥 두지 마세요.</b> 신경·척수 문제를 시사할 수 있어, 다음 진료를 앞당기거나 의료진에게 바로 알리는 게 안전합니다. 갑작스럽거나 빠르게 나빠지면 응급 진료를 고려하세요.</div>
+      </div>
+
+      <div class="card">
+        <h2><span class="num-tag">5</span> 메모 <span style="font-weight:400;color:var(--faint);font-size:12px">(선택)</span></h2>
+        <textarea id="memo" placeholder="오늘 특이사항, 신전 중 느낌, 통증을 키운 활동 등"></textarea>
+      </div>
+
+      <div class="card">
+        <h2><span class="num-tag">6</span> 척추위생 관리</h2>
+        <p class="hint">하루를 일상·업무·이동·운동·수면으로 나눠 기록합니다.</p>
+
+        <div class="field">
+          <label>일상 <span class="micro">특이사항</span></label>
+          <textarea id="hgDaily" placeholder="오래 앉아 있었다, 무거운 것을 들었다, 좋은 자세 유지 등" style="min-height:52px"></textarea>
+        </div>
+
+        <div class="field">
+          <label>업무 <span class="micro">특이사항</span></label>
+          <textarea id="hgWork" placeholder="장시간 모니터 작업, 회의·발표, 야근 등" style="min-height:52px"></textarea>
+        </div>
+
+        <div class="field">
+          <label>이동</label>
+          <div class="modegrid">
+            <span class="modeitem">운전 <input type="number" id="hgDrive" min="0" placeholder="0"><span class="mu">분</span></span>
+            <span class="modeitem">버스 <input type="number" id="hgBus" min="0" placeholder="0"><span class="mu">분</span></span>
+            <span class="modeitem">지하철 <input type="number" id="hgSubway" min="0" placeholder="0"><span class="mu">분</span></span>
+          </div>
+          <textarea id="hgMoveNote" placeholder="이동 중 특이사항 (장시간 고개 숙임, 흔들림 등)" style="min-height:44px;margin-top:8px"></textarea>
+        </div>
+
+        <div class="field">
+          <label>운동</label>
+          <div class="modegrid">
+            <span class="modeitem">걷기 <input type="number" id="hgWalk" min="0" placeholder="0"><span class="mu">분</span></span>
+            <span class="modeitem">트레드밀 <input type="number" id="hgTread" min="0" placeholder="0"><span class="mu">분</span></span>
+          </div>
+        </div>
+
+        <div class="field" style="margin-bottom:0">
+          <label>수면</label>
+          <div class="sleeprow">
+            <span class="sl"><span class="sllab">전날 베개</span><input type="text" id="slpPillow" placeholder="예: 라텍스 저베개" style="width:160px"></span>
+          </div>
+          <div class="sleeprow">
+            <span class="sl"><span class="sllab">잠든 시각</span><input type="time" id="slpSleep"></span>
+            <span class="sl"><span class="sllab">일어난 시각</span><input type="time" id="slpWake"></span>
+            <span class="sl"><span class="sllab">총 수면</span><span class="sleeptotal" id="slpTotal">—</span></span>
+          </div>
+          <div class="sleeprow" style="margin-bottom:0">
+            <span class="sllab">수면의 질</span>
+            <div class="qual-chips" id="slpQual">
+              <button class="qchip" data-q="나쁨">나쁨</button>
+              <button class="qchip" data-q="보통">보통</button>
+              <button class="qchip" data-q="좋음">좋음</button>
+              <button class="qchip" data-q="매우 좋음">매우 좋음</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="save">
+        <button class="btn" id="saveBtn">지금 저장 (수동 확인)</button>
+        <div class="saved-note" id="savedNote"></div>
+        <div class="storewarn" id="storeWarn">브라우저 자동 저장이 안 되는 환경입니다. 기록이 사라지지 않도록 아래 <b>JSON 백업</b>을 사용하세요.</div>
+      </div>
+    </div>
+
+    <!-- ============ RIGHT: TREND + DETAIL ============ -->
+    <div class="col-trend">
+      <div class="colhead">추세 · 상세 <span class="auto">실시간 반영</span></div>
+
+      <div class="card">
+        <h2>방사통 추세 · 가장 멀리 내려온 지점</h2>
+        <p class="hint">선이 <b>아래로</b>=중심화(호전), <b>위로</b>=말초화(주의).</p>
+        <div class="legend"><span><i style="background:var(--good)"></i>왼팔</span><span><i style="background:var(--warn)"></i>오른팔</span></div>
+        <svg id="farChart" viewBox="0 0 640 220"></svg>
+        <div class="axis-note"><span>아래 = 중심화(호전)</span><span>위 = 말초화(주의)</span></div>
+      </div>
+
+      <div class="card">
+        <h2>시점별 강도 패턴 <span style="font-weight:400;color:var(--faint);font-size:12px">· 최근 7일 평균</span></h2>
+        <p class="hint">기상직후→오전→오후→취침전 강도 흐름. 입력된 시점만 평균에 반영됩니다.</p>
+        <div class="legend"><span><i style="background:var(--good)"></i>왼팔</span><span><i style="background:var(--warn)"></i>오른팔</span></div>
+        <svg id="tpChart" viewBox="0 0 640 220"></svg>
+      </div>
+
+      <div class="card">
+        <h2>날짜별 상세 <span style="font-weight:400;color:var(--faint);font-size:12px">· 날짜를 누르면 펼쳐집니다</span></h2>
+        <div class="datestrip" id="dateStrip"></div>
+        <div class="detail" id="detailPanel"></div>
+      </div>
+
+      <div class="card">
+        <details class="tools">
+          <summary>내보내기 · 백업</summary>
+          <div style="margin-top:12px">
+            <div class="toolrow">
+              <button class="btn ghost" id="backupBtn">기록 파일로 백업 (JSON)</button>
+              <button class="btn ghost" id="restoreBtn">백업 파일 불러오기</button>
+              <input type="file" id="restoreInput" accept="application/json,.json" style="display:none">
+            </div>
+            <div class="toolrow">
+              <button class="btn ghost" id="refreshExport">진료용 요약 만들기</button>
+              <button class="btn ghost" id="copyBtn">요약 복사</button>
+            </div>
+            <textarea class="export-area" id="exportText" readonly placeholder="‘진료용 요약 만들기’를 누르면 전체 기록이 텍스트로 정리됩니다."></textarea>
+          </div>
+        </details>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const LOCS=[
+  {n:"목",r:1},{n:"어깨",r:2},{n:"위팔",r:3},{n:"팔꿈치",r:4},{n:"아래팔",r:5},
+  {n:"손목",r:6},{n:"손등",r:7},{n:"손바닥",r:7},{n:"손날(척골측)",r:7},
+  {n:"1·2지",r:8},{n:"3지",r:8},{n:"4·5지",r:8},{n:"손가락끝",r:8}
+];
+const RANK_LABEL={0:"없음",1:"목",2:"어깨",3:"위팔",4:"팔꿈치",5:"아래팔",6:"손목",7:"손",8:"손끝"};
+const QUALITIES=["시림","저림","얼얼함","먹먹함","찌릿","화끈","통증"];
+const REF_PARTS=["목","어깨","승모근","견갑","윗등"];
+const TPS=[{k:"morning",n:"기상직후"},{k:"forenoon",n:"오전"},{k:"afternoon",n:"오후"},{k:"night",n:"취침전"}];
+const STORE_KEY="cervical-symptom-log";
+const LEGACY_KEYS=["cervical-symptom-log-v3"];
+let LOG={},selectedDate=null,storageOK=true;
+
+function hasWS(){return !!(window.storage&&window.storage.get&&window.storage.set);}
+async function storeGet(key){if(hasWS()){try{const r=await window.storage.get(key,false);return r&&r.value?r.value:null;}catch(e){return null;}}
+  try{return localStorage.getItem(key);}catch(e){return null;}}
+async function storeSet(key,val){if(hasWS()){try{await window.storage.set(key,val,false);return true;}catch(e){}}
+  try{localStorage.setItem(key,val);return true;}catch(e){return false;}}
+async function loadLog(){let v=await storeGet(STORE_KEY);if(v){try{LOG=JSON.parse(v);return;}catch(e){}}
+  for(const k of LEGACY_KEYS){const lv=await storeGet(k);if(lv){try{LOG=JSON.parse(lv);await storeSet(STORE_KEY,lv);return;}catch(e){}}}LOG={};}
+async function persist(){const ok=await storeSet(STORE_KEY,JSON.stringify(LOG));storageOK=ok;
+  document.getElementById('storeWarn').classList.toggle('show',!ok);return ok;}
+
+let spotsState={left:[],right:[]},tpData={},tpTouched={},tpTimes={},curTp="morning";
+function newId(){return "s"+Math.random().toString(36).slice(2,8);}
+
+function buildReferred(){const box=document.getElementById("referredSliders");box.innerHTML="";
+  REF_PARTS.forEach((p,i)=>{const f=document.createElement("div");f.className="field";
+    f.innerHTML=`<label>${p}</label><div class="slider-row"><input type="range" min="0" max="10" value="0" data-ref="${i}"><span class="val" data-refval="${i}">0</span></div>`;box.appendChild(f);});
+  box.querySelectorAll('[data-ref]').forEach(s=>s.oninput=()=>{document.querySelector(`[data-refval="${s.dataset.ref}"]`).textContent=s.value;});}
+
+function renderGrid(side){const grid=document.querySelector(`[data-grid="${side}"]`);grid.innerHTML="";
+  LOCS.forEach(l=>{const sel=spotsState[side].some(s=>s.loc===l.n);
+    const b=document.createElement("button");b.className="regbtn"+(sel?" sel":"");b.textContent=l.n;
+    b.onclick=()=>toggleRegion(side,l.n);grid.appendChild(b);});}
+function renderEditors(side){const box=document.querySelector(`[data-edit="${side}"]`);box.innerHTML="";
+  if(spotsState[side].length===0){box.innerHTML='<div class="nospot">선택된 부위 없음</div>';return;}
+  spotsState[side].forEach(sp=>{const c=document.createElement("div");c.className="spotcard";
+    c.innerHTML=`<button class="rmx" title="제거">×</button><div class="stitle">${sp.loc}</div>
+      <div class="qchips">${QUALITIES.map(q=>`<button class="qchip ${sp.quality===q?'on':''}" data-q="${q}">${q}</button>`).join("")}</div>`;
+    c.querySelector(".rmx").onclick=()=>removeSpot(side,sp.id);
+    c.querySelectorAll(".qchip").forEach(ch=>ch.onclick=()=>{sp.quality=(sp.quality===ch.dataset.q?"":ch.dataset.q);renderEditors(side);renderTp();scheduleAutosave();});
+    box.appendChild(c);});}
+function toggleRegion(side,loc){const idx=spotsState[side].findIndex(s=>s.loc===loc);
+  if(idx>=0){const id=spotsState[side][idx].id;spotsState[side].splice(idx,1);Object.values(tpData).forEach(v=>{if(v)delete v[id];});}
+  else spotsState[side].push({id:newId(),loc,quality:""});
+  renderGrid(side);renderEditors(side);renderTp();scheduleAutosave();}
+function removeSpot(side,id){spotsState[side]=spotsState[side].filter(s=>s.id!==id);
+  Object.values(tpData).forEach(v=>{if(v)delete v[id];});renderGrid(side);renderEditors(side);renderTp();scheduleAutosave();}
+
+function ensureTp(){TPS.forEach(t=>{if(!tpData[t.k])tpData[t.k]={};});}
+function buildTpTabs(){const box=document.getElementById("tpTabs");box.innerHTML="";
+  TPS.forEach(t=>{const d=document.createElement("div");d.className="tptab"+(t.k===curTp?" active":"")+(tpTouched[t.k]?" filled":"");d.dataset.k=t.k;
+    d.innerHTML=`<div class="tpname">${t.n}</div><div class="tpstate">${tpTouched[t.k]?"입력됨":"미입력"}</div>`;
+    d.onclick=()=>{curTp=t.k;buildTpTabs();renderTp();};box.appendChild(d);});}
+function renderTp(){ensureTp();const body=document.getElementById("tpBody");
+  const spots=[...spotsState.left.map(s=>({...s,side:"왼"})),...spotsState.right.map(s=>({...s,side:"오른"}))];
+  const timeEl=document.getElementById("tpTime");timeEl.value=tpTimes[curTp]||"";
+  timeEl.onchange=e=>{tpTimes[curTp]=e.target.value;tpTouched[curTp]=true;buildTpTabs();scheduleAutosave();};
+  if(spots.length===0){body.innerHTML='<div class="defineNote">먼저 위에서 증상 부위를 선택하세요.</div>';return;}
+  body.innerHTML="";
+  spots.forEach(sp=>{const v=(tpData[curTp]&&tpData[curTp][sp.id]!=null)?tpData[curTp][sp.id]:0;
+    const row=document.createElement("div");row.className="srow";
+    row.innerHTML=`<div class="sinfo"><div class="sloc">${sp.side} · ${sp.loc}</div><div class="smeta">${sp.quality||"성질 미정"}</div></div>
+      <input type="range" min="0" max="10" value="${v}"><span class="sval ${v>0?'on':''}">${v}</span>`;
+    const range=row.querySelector("input"),val=row.querySelector(".sval");
+    range.oninput=()=>{const n=+range.value;val.textContent=n;val.classList.toggle("on",n>0);
+      if(!tpData[curTp])tpData[curTp]={};spots.forEach(s=>{if(tpData[curTp][s.id]==null)tpData[curTp][s.id]=0;});
+      tpData[curTp][sp.id]=n;tpTouched[curTp]=true;buildTpTabs();scheduleAutosave();};
+    body.appendChild(row);});}
+
+function bindFlags(){document.querySelectorAll('#flags input').forEach(i=>i.addEventListener('change',()=>{
+  i.closest('.flag').classList.toggle('on',i.checked);
+  const any=[...document.querySelectorAll('#flags input')].some(x=>x.checked);
+  document.getElementById('alertBanner').classList.toggle('show',any);}));}
+
+function gather(){const tp={};TPS.forEach(t=>{if(tpTouched[t.k])tp[t.k]={time:tpTimes[t.k]||"",vals:{...(tpData[t.k]||{})}};});
+  return{date:document.getElementById('entryDate').value,spots:{left:spotsState.left,right:spotsState.right},timepoints:tp,
+    referred:REF_PARTS.map((p,i)=>parseInt(document.querySelector(`[data-ref="${i}"]`).value)||0),
+    morning:(document.querySelector('input[name="morning"]:checked')||{}).value||"",
+    extDone:document.getElementById('extDone').value,hygiene:document.getElementById('hygiene').value,
+    flags:[...document.querySelectorAll('#flags input:checked')].map(c=>c.value),
+    memo:document.getElementById('memo').value.trim(),care:gatherCare(),savedAt:new Date().toISOString()};}
+function num(id){const v=parseInt(document.getElementById(id).value);return isNaN(v)?0:v;}
+function gatherCare(){return{
+    daily:document.getElementById('hgDaily').value.trim(),
+    work:document.getElementById('hgWork').value.trim(),
+    move:{drive:num('hgDrive'),bus:num('hgBus'),subway:num('hgSubway'),note:document.getElementById('hgMoveNote').value.trim()},
+    exercise:{walk:num('hgWalk'),treadmill:num('hgTread')},
+    sleep:{pillow:document.getElementById('slpPillow').value.trim(),sleepAt:document.getElementById('slpSleep').value,
+      wakeAt:document.getElementById('slpWake').value,minutes:sleepMinutes(),quality:sleepQuality}};}
+function sleepMinutes(){const s=document.getElementById('slpSleep').value,w=document.getElementById('slpWake').value;
+  if(!s||!w)return null;const [sh,sm]=s.split(':').map(Number),[wh,wm]=w.split(':').map(Number);
+  let dur=(wh*60+wm)-(sh*60+sm);if(dur<=0)dur+=1440;return dur;}
+function fmtSleep(min){if(min==null)return "—";return `${Math.floor(min/60)}시간 ${min%60}분`;}
+function calcSleepTotal(){document.getElementById('slpTotal').textContent=fmtSleep(sleepMinutes());}
+let sleepQuality="";
+function renderSleepQual(){document.querySelectorAll('#slpQual .qchip').forEach(b=>b.classList.toggle('on',b.dataset.q===sleepQuality));}
+function careHasContent(c){if(!c)return false;return !!(c.daily||c.work||(c.move&&(c.move.drive||c.move.bus||c.move.subway||c.move.note))||
+  (c.exercise&&(c.exercise.walk||c.exercise.treadmill))||(c.sleep&&(c.sleep.pillow||c.sleep.sleepAt||c.sleep.wakeAt||c.sleep.quality)));}
+function hasContent(e){return (e.spots.left.length||e.spots.right.length||Object.keys(e.timepoints).length||
+  (e.referred||[]).some(v=>v>0)||e.morning||e.extDone!=="안 함"||(e.hygiene&&+e.hygiene>0)||(e.flags||[]).length||e.memo||careHasContent(e.care));}
+function fillForm(e){e=e||{};
+  spotsState={left:((e.spots||{}).left||[]).map(s=>({id:s.id||newId(),loc:s.loc,quality:s.quality||""})),
+              right:((e.spots||{}).right||[]).map(s=>({id:s.id||newId(),loc:s.loc,quality:s.quality||""}))};
+  tpData={};tpTouched={};tpTimes={};ensureTp();
+  if(e.timepoints)Object.keys(e.timepoints).forEach(k=>{tpData[k]={...(e.timepoints[k].vals||{})};tpTouched[k]=true;tpTimes[k]=e.timepoints[k].time||"";});
+  curTp="morning";renderGrid("left");renderGrid("right");renderEditors("left");renderEditors("right");buildTpTabs();renderTp();
+  (e.referred||[0,0,0,0,0]).forEach((v,i)=>{const s=document.querySelector(`[data-ref="${i}"]`);if(s){s.value=v;document.querySelector(`[data-refval="${i}"]`).textContent=v;}});
+  document.querySelectorAll('input[name="morning"]').forEach(r=>r.checked=(r.value===e.morning));
+  document.getElementById('extDone').value=e.extDone||"안 함";document.getElementById('hygiene').value=e.hygiene||"";
+  document.querySelectorAll('#flags input').forEach(c=>{c.checked=(e.flags||[]).includes(c.value);c.closest('.flag').classList.toggle('on',c.checked);});
+  document.getElementById('alertBanner').classList.toggle('show',(e.flags||[]).length>0);
+  document.getElementById('memo').value=e.memo||"";
+  const c=e.care||{};const mv=c.move||{},ex=c.exercise||{},sl=c.sleep||{};
+  document.getElementById('hgDaily').value=c.daily||"";
+  document.getElementById('hgWork').value=c.work||"";
+  document.getElementById('hgDrive').value=mv.drive||"";document.getElementById('hgBus').value=mv.bus||"";document.getElementById('hgSubway').value=mv.subway||"";
+  document.getElementById('hgMoveNote').value=mv.note||"";
+  document.getElementById('hgWalk').value=ex.walk||"";document.getElementById('hgTread').value=ex.treadmill||"";
+  document.getElementById('slpPillow').value=sl.pillow||"";document.getElementById('slpSleep').value=sl.sleepAt||"";document.getElementById('slpWake').value=sl.wakeAt||"";
+  sleepQuality=sl.quality||"";renderSleepQual();calcSleepTotal();}
+function clearForm(){fillForm({});}
+function todayStr(){const d=new Date();d.setMinutes(d.getMinutes()-d.getTimezoneOffset());return d.toISOString().slice(0,10);}
+function loadDate(){const dt=document.getElementById('entryDate').value;if(LOG[dt])fillForm(LOG[dt]);else clearForm();}
+
+let saveTimer=null;
+function scheduleAutosave(){clearTimeout(saveTimer);saveTimer=setTimeout(doAutosave,500);}
+async function doAutosave(){const e=gather();if(!e.date)return;
+  if(hasContent(e))LOG[e.date]=e;else delete LOG[e.date];
+  const ok=await persist();const a=document.getElementById('autoState');
+  a.textContent=ok?"자동 저장됨 ✓":"저장 안 됨";a.style.color=ok?"var(--good)":"var(--alert)";
+  selectedDate=e.date;refreshTrend();}
+async function manualSave(){const e=gather();if(!e.date){alert("날짜를 선택해 주세요.");return;}
+  if(hasContent(e))LOG[e.date]=e;else delete LOG[e.date];
+  const ok=await persist();const n=document.getElementById('savedNote');
+  if(ok){n.textContent="저장되었습니다 ✓ (미입력 항목은 미입력으로 보관)";n.style.color="var(--good)";}
+  else{n.textContent="브라우저 저장 실패 — JSON 백업을 이용하세요";n.style.color="var(--alert)";}
+  setTimeout(()=>n.textContent="",3000);selectedDate=e.date;refreshTrend();}
+
+function sortedDates(){return Object.keys(LOG).sort();}
+function farRankForDay(e,side){const spots=((e.spots||{})[side])||[];if(!spots.length)return 0;let max=0;
+  spots.forEach(s=>{const L=LOCS.find(l=>l.n===s.loc);const rank=L?L.r:0;
+    let active=false;Object.values(e.timepoints||{}).forEach(tp=>{if((tp.vals||{})[s.id]>0)active=true;});
+    if(active||!Object.keys(e.timepoints||{}).length)max=Math.max(max,rank);});return max;}
+function dayPeak(e,side){const spots=((e.spots||{})[side])||[];let p=0;
+  spots.forEach(s=>Object.values(e.timepoints||{}).forEach(tp=>{const v=(tp.vals||{})[s.id];if(v>p)p=v;}));return p;}
+
+function lineChart(svgId,series,yMax,rankLabels,xLabels){
+  const svg=document.getElementById(svgId);const vb=svg.getAttribute('viewBox').split(' ');const W=+vb[2],H=+vb[3];
+  const padL=44,padR=16,padT=14,padB=26;svg.innerHTML="";
+  const N=xLabels?xLabels.length:sortedDates().length;
+  if(N===0){svg.innerHTML=`<text x="${W/2}" y="${H/2}" text-anchor="middle" fill="#8A9893" font-size="13">기록이 쌓이면 추세가 표시됩니다</text>`;return;}
+  const x=i=>N===1?(padL+(W-padL-padR)/2):padL+i*(W-padL-padR)/(N-1);
+  const y=v=>padT+(1-v/yMax)*(H-padT-padB);
+  let g="";const step=Math.max(1,Math.ceil(yMax/4));
+  for(let k=0;k<=yMax;k+=step){const yy=y(k);g+=`<line x1="${padL}" y1="${yy}" x2="${W-padR}" y2="${yy}" stroke="#EEF1F0"/>`;
+    g+=`<text x="${padL-7}" y="${yy+4}" text-anchor="end" fill="#A7B2AE" font-size="11">${rankLabels?(RANK_LABEL[k]||k):k}</text>`;}
+  svg.insertAdjacentHTML('beforeend',g);
+  series.forEach(s=>{let pts=[],d="";s.data.forEach((v,i)=>{if(v==null)return;const px=x(i),py=y(v);
+    pts.push(`<circle cx="${px}" cy="${py}" r="3.4" fill="${s.color}"/>`);d+=(d?"L":"M")+px+" "+py+" ";});
+    if(d)svg.insertAdjacentHTML('beforeend',`<path d="${d}" fill="none" stroke="${s.color}" stroke-width="2.2" stroke-linejoin="round"/>`);
+    pts.forEach(p=>svg.insertAdjacentHTML('beforeend',p));});
+  const dts=sortedDates();
+  const idxs=xLabels?xLabels.map((_,i)=>i):(dts.length<=5?dts.map((_,i)=>i):[0,Math.floor(dts.length/2),dts.length-1]);
+  idxs.forEach(idx=>{const lab=xLabels?xLabels[idx]:dts[idx].slice(5);svg.insertAdjacentHTML('beforeend',`<text x="${x(idx)}" y="${H-8}" text-anchor="middle" fill="#A7B2AE" font-size="11">${lab}</text>`);});}
+function drawCharts(){const dts=sortedDates();
+  lineChart('farChart',[{color:'#2F8F7E',data:dts.map(d=>farRankForDay(LOG[d],'left'))},
+    {color:'#C2622F',data:dts.map(d=>farRankForDay(LOG[d],'right'))}],8,true,null);
+  const recent=dts.slice(-7);
+  function avgTp(side,k){let sum=0,cnt=0;recent.forEach(d=>{const e=LOG[d];const tp=(e.timepoints||{})[k];if(!tp)return;
+    const spots=((e.spots||{})[side])||[];if(!spots.length)return;let dmax=0,any=false;
+    spots.forEach(s=>{const v=(tp.vals||{})[s.id];if(v!=null){dmax=Math.max(dmax,v);any=true;}});if(any){sum+=dmax;cnt++;}});return cnt?+(sum/cnt).toFixed(1):null;}
+  lineChart('tpChart',[{color:'#2F8F7E',data:TPS.map(t=>avgTp('left',t.k))},
+    {color:'#C2622F',data:TPS.map(t=>avgTp('right',t.k))}],10,false,TPS.map(t=>t.n));}
+
+function renderDateStrip(){const box=document.getElementById('dateStrip');const dates=sortedDates().reverse();
+  if(dates.length===0){box.innerHTML='<div class="empty">기록이 없습니다.</div>';return;}
+  if(!selectedDate||!LOG[selectedDate])selectedDate=dates[0];box.innerHTML="";
+  dates.forEach(dt=>{const e=LOG[dt];const flagged=(e.flags||[]).length;const tpc=Object.keys(e.timepoints||{}).length;
+    const d=document.createElement("div");d.className="dchip"+(dt===selectedDate?" sel":"");
+    d.innerHTML=`<div class="dd">${dt.slice(5)}</div><div class="dtag ${flagged?'alert':''}">${flagged?('경고'+flagged):(tpc+'/4')}</div>`;
+    d.onclick=()=>{selectedDate=dt;renderDateStrip();renderDetail();};box.appendChild(d);});}
+function renderDetail(){const box=document.getElementById('detailPanel');const e=selectedDate?LOG[selectedDate]:null;
+  if(!e){box.innerHTML='<div class="empty">날짜를 선택하세요.</div>';return;}
+  const spots=[...((e.spots||{}).left||[]).map(s=>({...s,side:"왼"})),...((e.spots||{}).right||[]).map(s=>({...s,side:"오른"}))];
+  let h=`<div class="dsection" style="font-weight:700;font-size:15px;color:var(--ink);margin-bottom:2px">${selectedDate}</div>`;
+  h+=`<div class="dsection" style="color:var(--faint);margin-bottom:12px">아침 통증 ${e.morning||"—"} · 신전 ${e.extDone||"—"} · 척추위생 ${e.hygiene||"—"}</div>`;
+  if(spots.length){h+=`<table class="mtable"><thead><tr><th>부위</th>`;
+    TPS.forEach(t=>{const entered=!!(e.timepoints||{})[t.k];h+=`<th class="${entered?'':'unfilled'}">${t.n}${entered?'':'<br><span style="font-size:10px">미입력</span>'}</th>`;});
+    h+=`</tr></thead><tbody>`;
+    spots.forEach(sp=>{h+=`<tr><td class="loccell">${sp.side} ${sp.loc}<div class="qm">${sp.quality||"-"}</div></td>`;
+      TPS.forEach(t=>{const tp=(e.timepoints||{})[t.k];if(!tp){h+=`<td class="unfilled">미입력</td>`;}
+        else{const v=(tp.vals||{})[sp.id];const vv=(v==null?0:v);h+=`<td class="${vv>0?'vp':'v0'}">${vv}</td>`;}});h+=`</tr>`;});
+    h+=`</tbody></table>`;}else h+=`<div class="dsection">방사통 지점 입력 없음</div>`;
+  h+=`<div class="dsection"><b>가장 먼 지점</b> — 왼: ${RANK_LABEL[farRankForDay(e,'left')]} / 오른: ${RANK_LABEL[farRankForDay(e,'right')]}</div>`;
+  h+=`<div class="dsection"><b>연관통</b> — ${REF_PARTS.map((p,i)=>p+" "+((e.referred||[])[i]||0)).join(" · ")}</div>`;
+  if((e.flags||[]).length)h+=`<div class="dflags"><b>⚠ 경고 신호:</b> ${e.flags.join(", ")}</div>`;
+  if(e.memo)h+=`<div class="dsection"><b>메모</b> — ${e.memo.replace(/</g,'&lt;')}</div>`;
+  h+=careDetailHtml(e.care);
+  h+=`<button class="ddel" id="detailDel">이 날짜 기록 삭제</button>`;box.innerHTML=h;
+  document.getElementById('detailDel').onclick=async()=>{if(confirm(selectedDate+" 기록을 삭제할까요?")){
+    const cur=document.getElementById('entryDate').value;delete LOG[selectedDate];selectedDate=null;await persist();
+    if(cur && !LOG[cur])loadDate();refreshTrend();}};}
+function careDetailHtml(c){if(!careHasContent(c))return "";
+  const mv=c.move||{},ex=c.exercise||{},sl=c.sleep||{};let parts=[];
+  if(c.daily)parts.push(`<b>일상</b> ${c.daily.replace(/</g,'&lt;')}`);
+  if(c.work)parts.push(`<b>업무</b> ${c.work.replace(/</g,'&lt;')}`);
+  const move=[];if(mv.drive)move.push("운전 "+mv.drive+"분");if(mv.bus)move.push("버스 "+mv.bus+"분");if(mv.subway)move.push("지하철 "+mv.subway+"분");
+  if(move.length||mv.note)parts.push(`<b>이동</b> ${move.join(", ")}${mv.note?(" / "+mv.note.replace(/</g,'&lt;')):""}`);
+  const exr=[];if(ex.walk)exr.push("걷기 "+ex.walk+"분");if(ex.treadmill)exr.push("트레드밀 "+ex.treadmill+"분");
+  if(exr.length)parts.push(`<b>운동</b> ${exr.join(", ")}`);
+  const sleepBits=[];if(sl.pillow)sleepBits.push("베개 "+sl.pillow.replace(/</g,'&lt;'));
+  if(sl.sleepAt||sl.wakeAt)sleepBits.push((sl.sleepAt||"?")+"~"+(sl.wakeAt||"?")+(sl.minutes!=null?(" ("+fmtSleep(sl.minutes)+")"):""));
+  if(sl.quality)sleepBits.push("질 "+sl.quality);
+  if(sleepBits.length)parts.push(`<b>수면</b> ${sleepBits.join(" · ")}`);
+  if(!parts.length)return "";
+  return `<div class="dsection" style="margin-top:8px;padding-top:8px;border-top:1px solid var(--line-soft)"><b style="color:var(--good)">척추위생</b></div>`+
+    parts.map(p=>`<div class="dsection" style="margin-bottom:4px">${p}</div>`).join("");}
+function careText(c){if(!careHasContent(c))return "";const mv=c.move||{},ex=c.exercise||{},sl=c.sleep||{};let lines=[];
+  if(c.daily)lines.push("    일상: "+c.daily);if(c.work)lines.push("    업무: "+c.work);
+  const move=[];if(mv.drive)move.push("운전 "+mv.drive+"분");if(mv.bus)move.push("버스 "+mv.bus+"분");if(mv.subway)move.push("지하철 "+mv.subway+"분");
+  if(move.length||mv.note)lines.push("    이동: "+move.join(", ")+(mv.note?(" / "+mv.note):""));
+  const exr=[];if(ex.walk)exr.push("걷기 "+ex.walk+"분");if(ex.treadmill)exr.push("트레드밀 "+ex.treadmill+"분");
+  if(exr.length)lines.push("    운동: "+exr.join(", "));
+  const sb=[];if(sl.pillow)sb.push("베개 "+sl.pillow);if(sl.sleepAt||sl.wakeAt)sb.push((sl.sleepAt||"?")+"~"+(sl.wakeAt||"?")+(sl.minutes!=null?(" "+fmtSleep(sl.minutes)):""));if(sl.quality)sb.push("질 "+sl.quality);
+  if(sb.length)lines.push("    수면: "+sb.join(" · "));
+  return lines.length?("  〔척추위생〕\n"+lines.join("\n")+"\n"):"";}
+function refreshTrend(){drawCharts();renderDateStrip();renderDetail();}
+function buildExport(){const dates=sortedDates();let t="■ 경추 증상 기록 요약\n";
+  t+="생성: "+new Date().toLocaleString('ko-KR')+"\n기록 일수: "+dates.length+"일\n────────────────────────\n\n";
+  if(dates.length===0){t+="기록이 없습니다.";document.getElementById('exportText').value=t;return;}
+  const first=LOG[dates[0]],last=LOG[dates[dates.length-1]];
+  const dir=(a,b)=>b>a?"말초화(손끝으로 번짐, 주의)":b<a?"중심화(목으로 모임, 호전)":"변화 없음";
+  t+="〔방사통 가장 먼 지점 추세〕\n";
+  t+=`  왼팔 : ${RANK_LABEL[farRankForDay(first,'left')]} → ${RANK_LABEL[farRankForDay(last,'left')]}  (${dir(farRankForDay(first,'left'),farRankForDay(last,'left'))})\n`;
+  t+=`  오른팔: ${RANK_LABEL[farRankForDay(first,'right')]} → ${RANK_LABEL[farRankForDay(last,'right')]}  (${dir(farRankForDay(first,'right'),farRankForDay(last,'right'))})\n\n`;
+  const flagged=dates.filter(d=>(LOG[d].flags||[]).length);
+  if(flagged.length){t+="〔경고 신호가 기록된 날〕\n";flagged.forEach(d=>t+=`  ${d}: ${LOG[d].flags.join(", ")}\n`);t+="\n";}
+  t+="〔일자별 상세 (시점별 강도, 미입력 표시)〕\n";
+  dates.slice().reverse().forEach(d=>{const e=LOG[d];t+=`\n● ${d}  (아침통증 ${e.morning||"—"}, 신전 ${e.extDone||"—"})\n`;
+    ["left","right"].forEach(side=>{const label=side==="left"?"왼":"오른";const spots=((e.spots||{})[side])||[];
+      if(!spots.length){t+=`  ${label}: 증상 없음\n`;return;}
+      spots.forEach(s=>{const seq=TPS.map(tp=>{const t2=(e.timepoints||{})[tp.k];if(!t2)return tp.n+":미입력";
+        const v=(t2.vals||{})[s.id];return tp.n+":"+(v==null?0:v);}).join(" / ");
+        t+=`  ${label} ${s.loc}(${s.quality||"-"}) → ${seq}\n`;});});
+    t+=`  연관통: ${REF_PARTS.map((p,i)=>p+(e.referred?e.referred[i]:0)).join(" ")}\n`;
+    if((e.flags||[]).length)t+=`  ⚠ 경고: ${e.flags.join(", ")}\n`;if(e.memo)t+=`  메모: ${e.memo}\n`;t+=careText(e.care);});
+  document.getElementById('exportText').value=t;}
+
+function backup(){const blob=new Blob([JSON.stringify({app:"cervical-symptom-log",version:6,exportedAt:new Date().toISOString(),data:LOG},null,2)],{type:"application/json"});
+  const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=`경추증상기록-백업-${todayStr()}.json`;document.body.appendChild(a);a.click();a.remove();}
+function restore(file){const fr=new FileReader();fr.onload=async()=>{
+  try{const parsed=JSON.parse(fr.result);const incoming=parsed.data||parsed;if(typeof incoming!=="object")throw 0;
+    const cnt=Object.keys(incoming).length;
+    if(!confirm(`백업에서 ${cnt}일치 기록을 불러옵니다. 같은 날짜는 백업 내용으로 덮어씁니다. 진행할까요?`))return;
+    LOG=Object.assign({},LOG,incoming);await persist();loadDate();refreshTrend();buildExport();alert("복원 완료되었습니다.");
+  }catch(e){alert("파일을 읽을 수 없습니다. 이 앱에서 내보낸 JSON 백업 파일인지 확인해 주세요.");}};fr.readAsText(file);}
+
+async function init(){buildReferred();bindFlags();ensureTp();
+  document.getElementById('entryDate').value=todayStr();
+  document.getElementById('entryDate').onchange=()=>{loadDate();selectedDate=document.getElementById('entryDate').value;refreshTrend();};
+  document.getElementById('saveBtn').onclick=manualSave;
+  document.getElementById('today').addEventListener('input',scheduleAutosave);
+  document.getElementById('today').addEventListener('change',scheduleAutosave);
+  document.getElementById('slpSleep').addEventListener('input',calcSleepTotal);
+  document.getElementById('slpWake').addEventListener('input',calcSleepTotal);
+  document.querySelectorAll('#slpQual .qchip').forEach(b=>b.onclick=()=>{sleepQuality=(sleepQuality===b.dataset.q?"":b.dataset.q);renderSleepQual();scheduleAutosave();});
+  document.getElementById('copyBtn').onclick=()=>{const ta=document.getElementById('exportText');if(!ta.value)buildExport();ta.select();
+    navigator.clipboard.writeText(ta.value).then(()=>{document.getElementById('copyBtn').textContent="복사됨 ✓";setTimeout(()=>document.getElementById('copyBtn').textContent="요약 복사",1800);});};
+  document.getElementById('refreshExport').onclick=buildExport;
+  document.getElementById('backupBtn').onclick=backup;
+  document.getElementById('restoreBtn').onclick=()=>document.getElementById('restoreInput').click();
+  document.getElementById('restoreInput').onchange=e=>{if(e.target.files[0])restore(e.target.files[0]);e.target.value="";};
+  if(!hasWS()){try{localStorage.setItem("__t","1");localStorage.removeItem("__t");}catch(e){document.getElementById('storeWarn').classList.add('show');}}
+  await loadLog();selectedDate=todayStr();loadDate();refreshTrend();}
+init();
+</script>
+</body>
+</html>
