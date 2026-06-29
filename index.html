@@ -111,6 +111,19 @@
   .sleeprow input[type=time]{font-family:inherit;font-size:13px;border:1px solid var(--line);border-radius:7px;padding:6px 8px}
   .sleeptotal{font-weight:700;color:var(--good);font-size:13.5px}
   .qual-chips{display:flex;flex-wrap:wrap;gap:6px}
+  .subh{font-size:12.5px;font-weight:700;color:var(--ink);margin:16px 0 8px;padding-top:12px;border-top:1px solid var(--line-soft);display:flex;align-items:center;gap:6px}
+  .subh:first-of-type{border-top:0;padding-top:0;margin-top:6px}
+  .subh span{font-weight:400;color:var(--faint);font-size:11px}
+  .subnote{font-size:11px;color:var(--faint);margin-top:6px}
+  .chk{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ink);padding:6px 0;cursor:pointer}
+  .chk input{width:16px;height:16px;accent-color:var(--accent);flex-shrink:0}
+  .chk .pen{color:var(--warn);font-size:11.5px;font-weight:600}
+  .scoreband{display:flex;align-items:center;gap:14px;background:var(--good-soft);border:1px solid #BFE0D8;border-radius:10px;padding:12px 14px;margin-bottom:6px}
+  .scoreval{font-size:26px;font-weight:800;color:var(--good);line-height:1;white-space:nowrap}
+  .scoreval .scoremax{font-size:14px;font-weight:600;color:var(--muted)}
+  .scorebreak{font-size:11.5px;color:var(--muted);line-height:1.5}
+  .scoreband.warn{background:var(--warn-soft);border-color:#E2B894}.scoreband.warn .scoreval{color:var(--warn)}
+  .scoreband.bad{background:var(--alert-soft);border-color:#E6B5AE}.scoreband.bad .scoreval{color:var(--alert)}
   .datestrip{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;margin-bottom:12px}
   .dchip{flex:0 0 auto;border:1px solid var(--line);background:var(--card);border-radius:9px;padding:7px 11px;cursor:pointer;text-align:center;transition:.1s;min-width:60px}
   .dchip:hover{border-color:var(--accent)}
@@ -218,13 +231,83 @@
         </div>
       </div>
 
-      <div class="card">
-        <h2><span class="num-tag">4</span> 신전운동 · 척추위생 <span style="font-weight:400;color:var(--faint);font-size:12px">· 하루 1번</span></h2>
-        <div class="arms2">
-          <div class="field"><label>오늘 신전운동</label>
-            <select id="extDone"><option value="안 함">안 함</option><option value="함">함</option></select></div>
-          <div class="field"><label>척추위생 유지 <span class="micro">0–10</span></label>
-            <input type="number" id="hygiene" min="0" max="10" placeholder="0"></div>
+      <div class="card" id="careCard">
+        <h2><span class="num-tag">4</span> 척추위생 점수 <span style="font-weight:400;color:var(--faint);font-size:12px">· 기본 10점에서 가감</span></h2>
+        <p class="hint">하루 활동을 입력하면 점수가 자동 계산됩니다. 무엇이 점수를 깎았는지 점수칸과 오른쪽 상세에서 볼 수 있습니다.</p>
+
+        <div class="scoreband" id="scoreBand">
+          <div class="scoreval"><span id="careScoreNum">10</span><span class="scoremax">/10</span></div>
+          <div class="scorebreak" id="careScoreBreak">감점 항목 없음</div>
+        </div>
+
+        <div class="subh">이동 <span>· 운전·택시/보조석 1시간당 -1</span></div>
+        <div class="modegrid">
+          <span class="modeitem">운전 <input type="number" id="hgDrive" min="0" placeholder="0"><span class="mu">분</span></span>
+          <span class="modeitem">버스 <input type="number" id="hgBus" min="0" placeholder="0"><span class="mu">분</span></span>
+          <span class="modeitem">지하철 <input type="number" id="hgSubway" min="0" placeholder="0"><span class="mu">분</span></span>
+          <span class="modeitem">택시/보조석 <input type="number" id="hgTaxi" min="0" placeholder="0"><span class="mu">분</span></span>
+        </div>
+
+        <div class="subh">업무 <span>· 쉬기 거른 횟수당 -1, 회의 30분당 -1</span></div>
+        <div class="modegrid">
+          <span class="modeitem">모니터 <input type="number" id="hgMonitor" min="0" placeholder="0"><span class="mu">분</span></span>
+          <span class="modeitem">회의 <input type="number" id="hgMeeting" min="0" placeholder="0"><span class="mu">분</span></span>
+          <span class="modeitem">30분 쉬기 거름 <input type="number" id="hgMissed" min="0" placeholder="0"><span class="mu">회</span></span>
+        </div>
+
+        <div class="subh">운동 <span>· 안 하면 -1, 하면 +1</span></div>
+        <div class="modegrid">
+          <span class="modeitem">걷기 <input type="number" id="hgWalk" min="0" placeholder="0"><span class="mu">분</span></span>
+          <span class="modeitem">트레드밀 <input type="number" id="hgTread" min="0" placeholder="0"><span class="mu">분</span></span>
+        </div>
+        <label class="chk"><input type="checkbox" id="hgBadEx"> 목에 안 좋은 운동을 했다 <span class="pen">-2</span></label>
+
+        <div class="subh">수면 <span>· 전날 수면</span></div>
+        <div class="sleeprow">
+          <span class="sl"><span class="sllab">베개</span>
+            <select id="slpPillow" style="width:auto">
+              <option value="">선택</option>
+              <option>35베개</option><option>35+수건1장</option><option>58베개</option><option>작은베개</option><option value="기타">기타(입력)</option>
+            </select></span>
+          <span class="sl" id="pillowOtherWrap" style="display:none"><input type="text" id="slpPillowOther" placeholder="베개 종류 입력" style="width:150px"></span>
+        </div>
+        <div class="sleeprow">
+          <span class="sl"><span class="sllab">잠든 시각</span><input type="time" id="slpSleep"></span>
+          <span class="sl"><span class="sllab">일어난 시각</span><input type="time" id="slpWake"></span>
+          <span class="sl"><span class="sllab">총 수면</span><span class="sleeptotal" id="slpTotal">—</span></span>
+        </div>
+        <div class="sleeprow" style="display:block">
+          <span class="sllab">수면 증상 <span style="font-weight:400">(해당 모두)</span></span>
+          <div class="qual-chips" id="slpTags" style="margin-top:6px">
+            <button class="qchip" data-t="잠 못 듦">잠 못 듦</button>
+            <button class="qchip" data-t="자주 깸">자주 깸</button>
+            <button class="qchip" data-t="종종 깸">종종 깸</button>
+            <button class="qchip" data-t="숙면">숙면</button>
+            <button class="qchip" data-t="중간에 화장실감">중간에 화장실감</button>
+            <button class="qchip" data-t="기상 시 피곤함">기상 시 피곤함</button>
+            <button class="qchip" data-t="마음이 긴장됨">마음이 긴장됨</button>
+          </div>
+        </div>
+        <div class="sleeprow" style="display:block;margin-top:10px">
+          <span class="sllab">수면의 질 등급 <span style="font-weight:400">· 7시간 미만 -1</span></span>
+          <div class="qual-chips" id="slpLevel" style="margin-top:6px">
+            <button class="qchip" data-l="최악">최악 (-2)</button>
+            <button class="qchip" data-l="하">하 (-1)</button>
+            <button class="qchip" data-l="중">중 (0)</button>
+            <button class="qchip" data-l="상">상 (+1)</button>
+            <button class="qchip" data-l="숙면">숙면 (+2)</button>
+          </div>
+        </div>
+
+        <div class="subh">일상</div>
+        <label class="chk"><input type="checkbox" id="hgHeadDown"> 일상 중 고개를 수그렸다 <span class="pen">-1</span></label>
+        <label class="chk"><input type="checkbox" id="hgHeadDownMany"> 여러 번 수그렸다 <span class="pen">추가 -1</span></label>
+        <label class="chk"><input type="checkbox" id="hgBadEvent"> 특별히 안 좋은 이벤트가 있었다 <span class="pen">-1</span></label>
+        <input type="text" id="hgBadEventNote" placeholder="상황 입력 (선택)" style="margin-top:6px">
+
+        <div class="subh">기침·재채기 방사통 <span>· 1회당 -1</span></div>
+        <div class="modegrid">
+          <span class="modeitem">전기 오듯 찌릿한 방사통 <input type="number" id="hgSneeze" min="0" placeholder="0"><span class="mu">회</span></span>
         </div>
       </div>
 
@@ -247,60 +330,6 @@
         <textarea id="memo" placeholder="오늘 특이사항, 신전 중 느낌, 통증을 키운 활동 등"></textarea>
       </div>
 
-      <div class="card">
-        <h2><span class="num-tag">6</span> 척추위생 관리</h2>
-        <p class="hint">하루를 일상·업무·이동·운동·수면으로 나눠 기록합니다.</p>
-
-        <div class="field">
-          <label>일상 <span class="micro">특이사항</span></label>
-          <textarea id="hgDaily" placeholder="오래 앉아 있었다, 무거운 것을 들었다, 좋은 자세 유지 등" style="min-height:52px"></textarea>
-        </div>
-
-        <div class="field">
-          <label>업무 <span class="micro">특이사항</span></label>
-          <textarea id="hgWork" placeholder="장시간 모니터 작업, 회의·발표, 야근 등" style="min-height:52px"></textarea>
-        </div>
-
-        <div class="field">
-          <label>이동</label>
-          <div class="modegrid">
-            <span class="modeitem">운전 <input type="number" id="hgDrive" min="0" placeholder="0"><span class="mu">분</span></span>
-            <span class="modeitem">버스 <input type="number" id="hgBus" min="0" placeholder="0"><span class="mu">분</span></span>
-            <span class="modeitem">지하철 <input type="number" id="hgSubway" min="0" placeholder="0"><span class="mu">분</span></span>
-          </div>
-          <textarea id="hgMoveNote" placeholder="이동 중 특이사항 (장시간 고개 숙임, 흔들림 등)" style="min-height:44px;margin-top:8px"></textarea>
-        </div>
-
-        <div class="field">
-          <label>운동</label>
-          <div class="modegrid">
-            <span class="modeitem">걷기 <input type="number" id="hgWalk" min="0" placeholder="0"><span class="mu">분</span></span>
-            <span class="modeitem">트레드밀 <input type="number" id="hgTread" min="0" placeholder="0"><span class="mu">분</span></span>
-          </div>
-        </div>
-
-        <div class="field" style="margin-bottom:0">
-          <label>수면</label>
-          <div class="sleeprow">
-            <span class="sl"><span class="sllab">전날 베개</span><input type="text" id="slpPillow" placeholder="예: 라텍스 저베개" style="width:160px"></span>
-          </div>
-          <div class="sleeprow">
-            <span class="sl"><span class="sllab">잠든 시각</span><input type="time" id="slpSleep"></span>
-            <span class="sl"><span class="sllab">일어난 시각</span><input type="time" id="slpWake"></span>
-            <span class="sl"><span class="sllab">총 수면</span><span class="sleeptotal" id="slpTotal">—</span></span>
-          </div>
-          <div class="sleeprow" style="margin-bottom:0">
-            <span class="sllab">수면의 질</span>
-            <div class="qual-chips" id="slpQual">
-              <button class="qchip" data-q="나쁨">나쁨</button>
-              <button class="qchip" data-q="보통">보통</button>
-              <button class="qchip" data-q="좋음">좋음</button>
-              <button class="qchip" data-q="매우 좋음">매우 좋음</button>
-            </div>
-          </div>
-        </div>
-      </div>
-
       <div class="save">
         <button class="btn" id="saveBtn">지금 저장 (수동 확인)</button>
         <div class="saved-note" id="savedNote"></div>
@@ -315,7 +344,7 @@
       <div class="card">
         <h2>중심화 추세 · 가장 멀리 내려온 지점</h2>
         <p class="hint">선이 <b>아래로</b>=중심화(호전), <b>위로</b>=말초화(주의).</p>
-        <div class="legend"><span><i style="background:var(--good)"></i>왼팔</span><span><i style="background:var(--warn)"></i>오른팔</span></div>
+        <div class="legend"><span><i style="background:#C2622F"></i>왼팔(실선)</span><span><i style="background:#3B6EA5;border-top:2px dashed #3B6EA5;height:0;width:18px"></i>오른팔(점선)</span></div>
         <svg id="farChart" viewBox="0 0 640 220"></svg>
         <div class="axis-note"><span>아래 = 중심화(호전)</span><span>위 = 말초화(주의)</span></div>
       </div>
@@ -336,6 +365,12 @@
         <p class="hint">그날 증상이 체크된 지점의 개수. 선이 <b>올라가면 범위 확대(주의)</b>, <b>내려가면 좁아짐(호전)</b>.</p>
         <div class="legend"><span><i style="background:#C2622F"></i>왼손(실선)</span><span><i style="background:#3B6EA5;border-top:2px dashed #3B6EA5;height:0;width:18px"></i>오른손(점선)</span></div>
         <svg id="rangeChart" viewBox="0 0 640 220"></svg>
+      </div>
+
+      <div class="card">
+        <h2>일별 척추위생 점수 추세 <span style="font-weight:400;color:var(--faint);font-size:12px">· 10점 만점</span></h2>
+        <p class="hint">하루 활동 점수의 흐름. 선이 <b>높을수록 척추위생을 잘 지킨 날</b>입니다.</p>
+        <svg id="careScoreChart" viewBox="0 0 640 220"></svg>
       </div>
 
       <div class="card">
@@ -538,28 +573,66 @@ function gather(){const tp={};TPS.forEach(t=>{if(tpTouched[t.k])tp[t.k]={time:tp
   return{date:document.getElementById('entryDate').value,spots:{left:spotsState.left,right:spotsState.right},timepoints:tp,
     referred:REF_PARTS.map((p,i)=>parseInt(document.querySelector(`[data-ref="${i}"]`).value)||0),
     morning:(document.querySelector('input[name="morning"]:checked')||{}).value||"",
-    extDone:document.getElementById('extDone').value,hygiene:document.getElementById('hygiene').value,
     flags:[...document.querySelectorAll('#flags input:checked')].map(c=>c.value),
     memo:document.getElementById('memo').value.trim(),care:gatherCare(),savedAt:new Date().toISOString()};}
-function num(id){const v=parseInt(document.getElementById(id).value);return isNaN(v)?0:v;}
+function num(id){const v=parseFloat(document.getElementById(id).value);return isNaN(v)?0:v;}
+let sleepLevel="";let sleepTags=[];
 function gatherCare(){return{
-    daily:document.getElementById('hgDaily').value.trim(),
-    work:document.getElementById('hgWork').value.trim(),
-    move:{drive:num('hgDrive'),bus:num('hgBus'),subway:num('hgSubway'),note:document.getElementById('hgMoveNote').value.trim()},
-    exercise:{walk:num('hgWalk'),treadmill:num('hgTread')},
-    sleep:{pillow:document.getElementById('slpPillow').value.trim(),sleepAt:document.getElementById('slpSleep').value,
-      wakeAt:document.getElementById('slpWake').value,minutes:sleepMinutes(),quality:sleepQuality}};}
+    move:{drive:num('hgDrive'),bus:num('hgBus'),subway:num('hgSubway'),taxi:num('hgTaxi')},
+    work:{monitor:num('hgMonitor'),meeting:num('hgMeeting'),missedBreaks:num('hgMissed')},
+    exercise:{walk:num('hgWalk'),treadmill:num('hgTread'),bad:document.getElementById('hgBadEx').checked},
+    sleep:{pillow:document.getElementById('slpPillow').value,pillowOther:document.getElementById('slpPillowOther').value.trim(),
+      sleepAt:document.getElementById('slpSleep').value,wakeAt:document.getElementById('slpWake').value,
+      minutes:sleepMinutes(),tags:[...sleepTags],level:sleepLevel},
+    daily:{headDown:document.getElementById('hgHeadDown').checked,headDownMany:document.getElementById('hgHeadDownMany').checked,
+      badEvent:document.getElementById('hgBadEvent').checked,badEventNote:document.getElementById('hgBadEventNote').value.trim()},
+    sneeze:num('hgSneeze')};}
 function sleepMinutes(){const s=document.getElementById('slpSleep').value,w=document.getElementById('slpWake').value;
   if(!s||!w)return null;const [sh,sm]=s.split(':').map(Number),[wh,wm]=w.split(':').map(Number);
   let dur=(wh*60+wm)-(sh*60+sm);if(dur<=0)dur+=1440;return dur;}
 function fmtSleep(min){if(min==null)return "—";return `${Math.floor(min/60)}시간 ${min%60}분`;}
 function calcSleepTotal(){document.getElementById('slpTotal').textContent=fmtSleep(sleepMinutes());}
-let sleepQuality="";
-function renderSleepQual(){document.querySelectorAll('#slpQual .qchip').forEach(b=>b.classList.toggle('on',b.dataset.q===sleepQuality));}
-function careHasContent(c){if(!c)return false;return !!(c.daily||c.work||(c.move&&(c.move.drive||c.move.bus||c.move.subway||c.move.note))||
-  (c.exercise&&(c.exercise.walk||c.exercise.treadmill))||(c.sleep&&(c.sleep.pillow||c.sleep.sleepAt||c.sleep.wakeAt||c.sleep.quality)));}
+function renderSleepChips(){
+  document.querySelectorAll('#slpTags .qchip').forEach(b=>b.classList.toggle('on',sleepTags.includes(b.dataset.t)));
+  document.querySelectorAll('#slpLevel .qchip').forEach(b=>b.classList.toggle('on',b.dataset.l===sleepLevel));}
+
+/* ===== care score (computed, never stored — so rule changes recompute old data) ===== */
+const SLEEP_LVL={'최악':-2,'하':-1,'중':0,'상':1,'숙면':2};
+function computeCareScore(c){
+  let s=10,items=[];if(!c)return{score:10,raw:10,items:items};
+  const mv=c.move||{},wk=c.work||{},ex=c.exercise||{},sl=c.sleep||{},dl=c.daily||{};
+  if(mv.drive){const d=-Math.floor(mv.drive/60);if(d){s+=d;items.push(['운전 '+mv.drive+'분',d]);}}
+  if(mv.taxi){const d=-Math.floor(mv.taxi/60);if(d){s+=d;items.push(['택시/보조석 '+mv.taxi+'분',d]);}}
+  if(wk.missedBreaks){const d=-Math.round(wk.missedBreaks);s+=d;items.push(['30분 쉬기 거름 '+wk.missedBreaks+'회',d]);}
+  if(wk.meeting){const d=-Math.floor(wk.meeting/30);if(d){s+=d;items.push(['회의 '+wk.meeting+'분',d]);}}
+  const exT=(ex.walk||0)+(ex.treadmill||0);
+  if(exT>0){s+=1;items.push(['운동함 ('+exT+'분)',1]);}else{s-=1;items.push(['운동 안 함',-1]);}
+  if(ex.bad){s-=2;items.push(['목에 안 좋은 운동',-2]);}
+  if(sl.minutes!=null&&sl.minutes<420){s-=1;items.push(['수면 7시간 미만',-1]);}
+  if(sl.level&&SLEEP_LVL[sl.level]!==undefined){const d=SLEEP_LVL[sl.level];if(d){s+=d;items.push(['수면의 질 '+sl.level,d]);}}
+  if(dl.headDown){s-=1;items.push(['고개 수그림',-1]);}
+  if(dl.headDownMany){s-=1;items.push(['여러 번 수그림',-1]);}
+  if(dl.badEvent){s-=1;items.push(['안 좋은 이벤트'+(dl.badEventNote?'('+dl.badEventNote+')':''),-1]);}
+  if(c.sneeze){const d=-Math.round(c.sneeze);s+=d;items.push(['기침/재채기 찌릿 '+c.sneeze+'회',d]);}
+  return{score:Math.min(10,s),raw:s,items:items};
+}
+function renderCareScore(){
+  const r=computeCareScore(gatherCare());
+  document.getElementById('careScoreNum').textContent=r.score;
+  const band=document.getElementById('scoreBand');band.classList.remove('warn','bad');
+  if(r.score<=4)band.classList.add('bad');else if(r.score<=7)band.classList.add('warn');
+  const minus=r.items.filter(i=>i[1]<0),plus=r.items.filter(i=>i[1]>0);
+  let txt='';
+  if(minus.length)txt+='감점: '+minus.map(i=>i[0]+' '+i[1]).join(', ');
+  if(plus.length)txt+=(txt?' · ':'')+'가점: '+plus.map(i=>i[0]+' +'+i[1]).join(', ');
+  document.getElementById('careScoreBreak').textContent=txt||'감점 항목 없음';
+}
+function careHasContent(c){if(!c)return false;const mv=c.move||{},wk=c.work||{},ex=c.exercise||{},sl=c.sleep||{},dl=c.daily||{};
+  return !!(mv.drive||mv.bus||mv.subway||mv.taxi||wk.monitor||wk.meeting||wk.missedBreaks||ex.walk||ex.treadmill||ex.bad||
+    sl.pillow||sl.sleepAt||sl.wakeAt||(sl.tags&&sl.tags.length)||sl.level||
+    dl.headDown||dl.headDownMany||dl.badEvent||c.sneeze);}
 function hasContent(e){return (e.spots.left.length||e.spots.right.length||Object.keys(e.timepoints).length||
-  (e.referred||[]).some(v=>v>0)||e.morning||e.extDone!=="안 함"||(e.hygiene&&+e.hygiene>0)||(e.flags||[]).length||e.memo||careHasContent(e.care));}
+  (e.referred||[]).some(v=>v>0)||e.morning||(e.flags||[]).length||e.memo||careHasContent(e.care));}
 function fillForm(e){e=e||{};
   spotsState={left:((e.spots||{}).left||[]).map(s=>({id:s.id||newId(),loc:s.loc,quality:s.quality||""})),
               right:((e.spots||{}).right||[]).map(s=>({id:s.id||newId(),loc:s.loc,quality:s.quality||""}))};
@@ -568,18 +641,22 @@ function fillForm(e){e=e||{};
   curTp="morning";renderGrid("left");renderGrid("right");renderEditors("left");renderEditors("right");buildTpTabs();renderTp();
   (e.referred||[0,0,0,0,0]).forEach((v,i)=>{const s=document.querySelector(`[data-ref="${i}"]`);if(s){s.value=v;document.querySelector(`[data-refval="${i}"]`).textContent=v;}});
   document.querySelectorAll('input[name="morning"]').forEach(r=>r.checked=(r.value===e.morning));
-  document.getElementById('extDone').value=e.extDone||"안 함";document.getElementById('hygiene').value=e.hygiene||"";
   document.querySelectorAll('#flags input').forEach(c=>{c.checked=(e.flags||[]).includes(c.value);c.closest('.flag').classList.toggle('on',c.checked);});
   document.getElementById('alertBanner').classList.toggle('show',(e.flags||[]).length>0);
   document.getElementById('memo').value=e.memo||"";
-  const c=e.care||{};const mv=c.move||{},ex=c.exercise||{},sl=c.sleep||{};
-  document.getElementById('hgDaily').value=c.daily||"";
-  document.getElementById('hgWork').value=c.work||"";
-  document.getElementById('hgDrive').value=mv.drive||"";document.getElementById('hgBus').value=mv.bus||"";document.getElementById('hgSubway').value=mv.subway||"";
-  document.getElementById('hgMoveNote').value=mv.note||"";
-  document.getElementById('hgWalk').value=ex.walk||"";document.getElementById('hgTread').value=ex.treadmill||"";
-  document.getElementById('slpPillow').value=sl.pillow||"";document.getElementById('slpSleep').value=sl.sleepAt||"";document.getElementById('slpWake').value=sl.wakeAt||"";
-  sleepQuality=sl.quality||"";renderSleepQual();calcSleepTotal();}
+  const c=e.care||{};const mv=c.move||{},wk=c.work||{},ex=c.exercise||{},sl=c.sleep||{},dl=c.daily||{};
+  const setv=(id,v)=>{const el=document.getElementById(id);if(el)el.value=(v||v===0)?v:"";};
+  setv('hgDrive',mv.drive);setv('hgBus',mv.bus);setv('hgSubway',mv.subway);setv('hgTaxi',mv.taxi);
+  setv('hgMonitor',wk.monitor);setv('hgMeeting',wk.meeting);setv('hgMissed',wk.missedBreaks);
+  setv('hgWalk',ex.walk);setv('hgTread',ex.treadmill);document.getElementById('hgBadEx').checked=!!ex.bad;
+  document.getElementById('slpPillow').value=sl.pillow||"";document.getElementById('slpPillowOther').value=sl.pillowOther||"";
+  document.getElementById('pillowOtherWrap').style.display=(sl.pillow==='기타')?'inline-flex':'none';
+  document.getElementById('slpSleep').value=sl.sleepAt||"";document.getElementById('slpWake').value=sl.wakeAt||"";
+  sleepTags=Array.isArray(sl.tags)?[...sl.tags]:[];sleepLevel=sl.level||"";renderSleepChips();calcSleepTotal();
+  document.getElementById('hgHeadDown').checked=!!dl.headDown;document.getElementById('hgHeadDownMany').checked=!!dl.headDownMany;
+  document.getElementById('hgBadEvent').checked=!!dl.badEvent;document.getElementById('hgBadEventNote').value=dl.badEventNote||"";
+  setv('hgSneeze',c.sneeze);
+  renderCareScore();}
 function clearForm(){fillForm({});}
 function todayStr(){const d=new Date();d.setMinutes(d.getMinutes()-d.getTimezoneOffset());return d.toISOString().slice(0,10);}
 function loadDate(){const dt=document.getElementById('entryDate').value;if(LOG[dt])fillForm(LOG[dt]);else clearForm();}
@@ -606,15 +683,17 @@ function farRankForDay(e,side){const spots=((e.spots||{})[side])||[];if(!spots.l
 function dayPeak(e,side){const spots=((e.spots||{})[side])||[];let p=0;
   spots.forEach(s=>Object.values(e.timepoints||{}).forEach(tp=>{const v=(tp.vals||{})[s.id];if(v>p)p=v;}));return p;}
 
-function lineChart(svgId,series,yMax,rankLabels,xLabels){
+function lineChart(svgId,series,yMax,rankLabels,xLabels,yMin){
+  yMin=yMin||0;
   const svg=document.getElementById(svgId);const vb=svg.getAttribute('viewBox').split(' ');const W=+vb[2],H=+vb[3];
   const padL=44,padR=16,padT=14,padB=26;svg.innerHTML="";
   const N=xLabels?xLabels.length:sortedDates().length;
   if(N===0){svg.innerHTML=`<text x="${W/2}" y="${H/2}" text-anchor="middle" fill="#8A9893" font-size="13">기록이 쌓이면 추세가 표시됩니다</text>`;return;}
   const x=i=>N===1?(padL+(W-padL-padR)/2):padL+i*(W-padL-padR)/(N-1);
-  const y=v=>padT+(1-v/yMax)*(H-padT-padB);
-  let g="";const step=Math.max(1,Math.ceil(yMax/4));
-  for(let k=0;k<=yMax;k+=step){const yy=y(k);g+=`<line x1="${padL}" y1="${yy}" x2="${W-padR}" y2="${yy}" stroke="#EEF1F0"/>`;
+  const span=(yMax-yMin)||1;
+  const y=v=>padT+(1-(v-yMin)/span)*(H-padT-padB);
+  let g="";const step=Math.max(1,Math.ceil(span/4));
+  for(let k=yMin;k<=yMax;k+=step){const yy=y(k);g+=`<line x1="${padL}" y1="${yy}" x2="${W-padR}" y2="${yy}" stroke="${k===0&&yMin<0?'#D8DEDC':'#EEF1F0'}"/>`;
     g+=`<text x="${padL-7}" y="${yy+4}" text-anchor="end" fill="#A7B2AE" font-size="11">${rankLabels?(RANK_LABEL[k]||k):k}</text>`;}
   svg.insertAdjacentHTML('beforeend',g);
   series.forEach(s=>{let pts=[],d="";s.data.forEach((v,i)=>{if(v==null)return;const px=x(i),py=y(v);
@@ -636,8 +715,8 @@ function dayActiveCount(e,side){
   spots.forEach(s=>{let active=false;Object.values(e.timepoints||{}).forEach(tp=>{if((tp.vals||{})[s.id]>0)active=true;});
     if(active||noTp)c++;});return c;}
 function drawCharts(){const dts=sortedDates();
-  lineChart('farChart',[{color:'#2F8F7E',data:dts.map(d=>farRankForDay(LOG[d],'left'))},
-    {color:'#C2622F',data:dts.map(d=>farRankForDay(LOG[d],'right'))}],8,true,null);
+  lineChart('farChart',[{color:'#C2622F',data:dts.map(d=>farRankForDay(LOG[d],'left'))},
+    {color:'#3B6EA5',dash:true,data:dts.map(d=>farRankForDay(LOG[d],'right'))}],8,true,null);
   // daily per-timepoint sum trend — left(warm, solid) / right(cool, dashed)
   // warm = left, cool = right; one hue per timepoint, shade by timepoint
   const warm={morning:'#E0A458',forenoon:'#D97D3C',afternoon:'#C2622F',night:'#9E3D26'};
@@ -660,6 +739,10 @@ function drawCharts(){const dts=sortedDates();
     {color:'#C2622F',data:dts.map(d=>dayActiveCount(LOG[d],'left'))},
     {color:'#3B6EA5',dash:true,data:dts.map(d=>dayActiveCount(LOG[d],'right'))}
   ],cntMax,false,null);
+  // daily spinal-hygiene score (computed, so old data recomputes under current rules)
+  const scores=dts.map(d=>computeCareScore((LOG[d]||{}).care).score);
+  let sMin=0;scores.forEach(v=>{if(v<sMin)sMin=v;});sMin=Math.floor(sMin);
+  lineChart('careScoreChart',[{color:'#2F8F7E',data:scores}],10,false,null,sMin);
 }
 
 function renderDateStrip(){const box=document.getElementById('dateStrip');const dates=sortedDates().reverse();
@@ -673,7 +756,8 @@ function renderDetail(){const box=document.getElementById('detailPanel');const e
   if(!e){box.innerHTML='<div class="empty">날짜를 선택하세요.</div>';return;}
   const spots=[...((e.spots||{}).left||[]).map(s=>({...s,side:"왼"})),...((e.spots||{}).right||[]).map(s=>({...s,side:"오른"}))];
   let h=`<div class="dsection" style="font-weight:700;font-size:15px;color:var(--ink);margin-bottom:2px">${selectedDate}</div>`;
-  h+=`<div class="dsection" style="color:var(--faint);margin-bottom:12px">아침 통증 ${e.morning||"—"} · 신전 ${e.extDone||"—"} · 척추위생 ${e.hygiene||"—"}</div>`;
+  const cs=computeCareScore(e.care);
+  h+=`<div class="dsection" style="color:var(--faint);margin-bottom:12px">아침 통증 ${e.morning||"—"} · 척추위생 점수 <b style="color:${cs.score<=4?'var(--alert)':cs.score<=7?'var(--warn)':'var(--good)'}">${cs.score}/10</b></div>`;
   if(spots.length){h+=`<table class="mtable"><thead><tr><th>부위</th>`;
     TPS.forEach(t=>{const entered=!!(e.timepoints||{})[t.k];h+=`<th class="${entered?'':'unfilled'}">${t.n}${entered?'':'<br><span style="font-size:10px">미입력</span>'}</th>`;});
     h+=`</tr></thead><tbody>`;
@@ -691,29 +775,41 @@ function renderDetail(){const box=document.getElementById('detailPanel');const e
     const cur=document.getElementById('entryDate').value;delete LOG[selectedDate];selectedDate=null;await persist();
     if(cur && !LOG[cur])loadDate();refreshTrend();}};}
 function careDetailHtml(c){if(!careHasContent(c))return "";
-  const mv=c.move||{},ex=c.exercise||{},sl=c.sleep||{};let parts=[];
-  if(c.daily)parts.push(`<b>일상</b> ${c.daily.replace(/</g,'&lt;')}`);
-  if(c.work)parts.push(`<b>업무</b> ${c.work.replace(/</g,'&lt;')}`);
-  const move=[];if(mv.drive)move.push("운전 "+mv.drive+"분");if(mv.bus)move.push("버스 "+mv.bus+"분");if(mv.subway)move.push("지하철 "+mv.subway+"분");
-  if(move.length||mv.note)parts.push(`<b>이동</b> ${move.join(", ")}${mv.note?(" / "+mv.note.replace(/</g,'&lt;')):""}`);
-  const exr=[];if(ex.walk)exr.push("걷기 "+ex.walk+"분");if(ex.treadmill)exr.push("트레드밀 "+ex.treadmill+"분");
+  const mv=c.move||{},wk=c.work||{},ex=c.exercise||{},sl=c.sleep||{},dl=c.daily||{};let parts=[];
+  const move=[];if(mv.drive)move.push("운전 "+mv.drive+"분");if(mv.bus)move.push("버스 "+mv.bus+"분");if(mv.subway)move.push("지하철 "+mv.subway+"분");if(mv.taxi)move.push("택시/보조석 "+mv.taxi+"분");
+  if(move.length)parts.push(`<b>이동</b> ${move.join(", ")}`);
+  const work=[];if(wk.monitor)work.push("모니터 "+wk.monitor+"분");if(wk.meeting)work.push("회의 "+wk.meeting+"분");if(wk.missedBreaks)work.push("쉬기거름 "+wk.missedBreaks+"회");
+  if(work.length)parts.push(`<b>업무</b> ${work.join(", ")}`);
+  const exr=[];if(ex.walk)exr.push("걷기 "+ex.walk+"분");if(ex.treadmill)exr.push("트레드밀 "+ex.treadmill+"분");if(ex.bad)exr.push("목에 안 좋은 운동");
   if(exr.length)parts.push(`<b>운동</b> ${exr.join(", ")}`);
-  const sleepBits=[];if(sl.pillow)sleepBits.push("베개 "+sl.pillow.replace(/</g,'&lt;'));
-  if(sl.sleepAt||sl.wakeAt)sleepBits.push((sl.sleepAt||"?")+"~"+(sl.wakeAt||"?")+(sl.minutes!=null?(" ("+fmtSleep(sl.minutes)+")"):""));
-  if(sl.quality)sleepBits.push("질 "+sl.quality);
-  if(sleepBits.length)parts.push(`<b>수면</b> ${sleepBits.join(" · ")}`);
-  if(!parts.length)return "";
-  return `<div class="dsection" style="margin-top:8px;padding-top:8px;border-top:1px solid var(--line-soft)"><b style="color:var(--good)">척추위생</b></div>`+
-    parts.map(p=>`<div class="dsection" style="margin-bottom:4px">${p}</div>`).join("");}
-function careText(c){if(!careHasContent(c))return "";const mv=c.move||{},ex=c.exercise||{},sl=c.sleep||{};let lines=[];
-  if(c.daily)lines.push("    일상: "+c.daily);if(c.work)lines.push("    업무: "+c.work);
-  const move=[];if(mv.drive)move.push("운전 "+mv.drive+"분");if(mv.bus)move.push("버스 "+mv.bus+"분");if(mv.subway)move.push("지하철 "+mv.subway+"분");
-  if(move.length||mv.note)lines.push("    이동: "+move.join(", ")+(mv.note?(" / "+mv.note):""));
-  const exr=[];if(ex.walk)exr.push("걷기 "+ex.walk+"분");if(ex.treadmill)exr.push("트레드밀 "+ex.treadmill+"분");
+  const sb=[];const pil=sl.pillow==='기타'?(sl.pillowOther||'기타'):sl.pillow;if(pil)sb.push("베개 "+pil.replace(/</g,'&lt;'));
+  if(sl.sleepAt||sl.wakeAt)sb.push((sl.sleepAt||"?")+"~"+(sl.wakeAt||"?")+(sl.minutes!=null?(" ("+fmtSleep(sl.minutes)+")"):""));
+  if(sl.level)sb.push("질 "+sl.level);if(sl.tags&&sl.tags.length)sb.push(sl.tags.join("/"));
+  if(sb.length)parts.push(`<b>수면</b> ${sb.join(" · ")}`);
+  const day=[];if(dl.headDown)day.push("고개 수그림");if(dl.headDownMany)day.push("여러 번");if(dl.badEvent)day.push("안 좋은 이벤트"+(dl.badEventNote?("("+dl.badEventNote.replace(/</g,'&lt;')+")"):""));
+  if(day.length)parts.push(`<b>일상</b> ${day.join(", ")}`);
+  if(c.sneeze)parts.push(`<b>기침/재채기 찌릿</b> ${c.sneeze}회`);
+  const cs=computeCareScore(c);
+  let head=`<div class="dsection" style="margin-top:10px;padding-top:10px;border-top:1px solid var(--line-soft)"><b style="color:var(--good)">척추위생 점수 ${cs.score}/10</b>`;
+  if(cs.items.length)head+=` <span style="color:var(--faint);font-size:11.5px">(${cs.items.map(i=>i[0]+' '+(i[1]>0?'+':'')+i[1]).join(', ')})</span>`;
+  head+=`</div>`;
+  return head+parts.map(p=>`<div class="dsection" style="margin-bottom:4px">${p}</div>`).join("");}
+function careText(c){if(!careHasContent(c))return "";const mv=c.move||{},wk=c.work||{},ex=c.exercise||{},sl=c.sleep||{},dl=c.daily||{};let lines=[];
+  const cs=computeCareScore(c);lines.push("    척추위생 점수: "+cs.score+"/10"+(cs.items.length?(" ("+cs.items.map(i=>i[0]+' '+(i[1]>0?'+':'')+i[1]).join(', ')+")"):""));
+  const move=[];if(mv.drive)move.push("운전 "+mv.drive+"분");if(mv.bus)move.push("버스 "+mv.bus+"분");if(mv.subway)move.push("지하철 "+mv.subway+"분");if(mv.taxi)move.push("택시/보조석 "+mv.taxi+"분");
+  if(move.length)lines.push("    이동: "+move.join(", "));
+  const work=[];if(wk.monitor)work.push("모니터 "+wk.monitor+"분");if(wk.meeting)work.push("회의 "+wk.meeting+"분");if(wk.missedBreaks)work.push("쉬기거름 "+wk.missedBreaks+"회");
+  if(work.length)lines.push("    업무: "+work.join(", "));
+  const exr=[];if(ex.walk)exr.push("걷기 "+ex.walk+"분");if(ex.treadmill)exr.push("트레드밀 "+ex.treadmill+"분");if(ex.bad)exr.push("목에 안 좋은 운동");
   if(exr.length)lines.push("    운동: "+exr.join(", "));
-  const sb=[];if(sl.pillow)sb.push("베개 "+sl.pillow);if(sl.sleepAt||sl.wakeAt)sb.push((sl.sleepAt||"?")+"~"+(sl.wakeAt||"?")+(sl.minutes!=null?(" "+fmtSleep(sl.minutes)):""));if(sl.quality)sb.push("질 "+sl.quality);
+  const sb=[];const pil=sl.pillow==='기타'?(sl.pillowOther||'기타'):sl.pillow;if(pil)sb.push("베개 "+pil);
+  if(sl.sleepAt||sl.wakeAt)sb.push((sl.sleepAt||"?")+"~"+(sl.wakeAt||"?")+(sl.minutes!=null?(" "+fmtSleep(sl.minutes)):""));
+  if(sl.level)sb.push("질 "+sl.level);if(sl.tags&&sl.tags.length)sb.push(sl.tags.join("/"));
   if(sb.length)lines.push("    수면: "+sb.join(" · "));
-  return lines.length?("  〔척추위생〕\n"+lines.join("\n")+"\n"):"";}
+  const day=[];if(dl.headDown)day.push("고개 수그림");if(dl.headDownMany)day.push("여러 번");if(dl.badEvent)day.push("안 좋은 이벤트"+(dl.badEventNote?("("+dl.badEventNote+")"):""));
+  if(day.length)lines.push("    일상: "+day.join(", "));
+  if(c.sneeze)lines.push("    기침/재채기 찌릿: "+c.sneeze+"회");
+  return "  〔척추위생〕\n"+lines.join("\n")+"\n";}
 function refreshTrend(){drawCharts();renderDateStrip();renderDetail();}
 function buildExport(){const dates=sortedDates();let t="■ 경추 증상 기록 요약\n";
   t+="생성: "+new Date().toLocaleString('ko-KR')+"\n기록 일수: "+dates.length+"일\n────────────────────────\n\n";
@@ -726,7 +822,7 @@ function buildExport(){const dates=sortedDates();let t="■ 경추 증상 기록
   const flagged=dates.filter(d=>(LOG[d].flags||[]).length);
   if(flagged.length){t+="〔경고 신호가 기록된 날〕\n";flagged.forEach(d=>t+=`  ${d}: ${LOG[d].flags.join(", ")}\n`);t+="\n";}
   t+="〔일자별 상세 (시점별 강도, 미입력 표시)〕\n";
-  dates.slice().reverse().forEach(d=>{const e=LOG[d];t+=`\n● ${d}  (아침통증 ${e.morning||"—"}, 신전 ${e.extDone||"—"})\n`;
+  dates.slice().reverse().forEach(d=>{const e=LOG[d];t+=`\n● ${d}  (아침통증 ${e.morning||"—"}, 척추위생 ${computeCareScore(e.care).score}/10)\n`;
     ["left","right"].forEach(side=>{const label=side==="left"?"왼":"오른";const spots=((e.spots||{})[side])||[];
       if(!spots.length){t+=`  ${label}: 증상 없음\n`;return;}
       spots.forEach(s=>{const seq=TPS.map(tp=>{const t2=(e.timepoints||{})[tp.k];if(!t2)return tp.n+":미입력";
@@ -749,11 +845,18 @@ async function init(){buildReferred();bindFlags();ensureTp();
   document.getElementById('entryDate').value=todayStr();
   document.getElementById('entryDate').onchange=()=>{loadDate();selectedDate=document.getElementById('entryDate').value;refreshTrend();};
   document.getElementById('saveBtn').onclick=manualSave;
-  document.getElementById('today').addEventListener('input',scheduleAutosave);
-  document.getElementById('today').addEventListener('change',scheduleAutosave);
-  document.getElementById('slpSleep').addEventListener('input',calcSleepTotal);
-  document.getElementById('slpWake').addEventListener('input',calcSleepTotal);
-  document.querySelectorAll('#slpQual .qchip').forEach(b=>b.onclick=()=>{sleepQuality=(sleepQuality===b.dataset.q?"":b.dataset.q);renderSleepQual();scheduleAutosave();});
+  document.getElementById('today').addEventListener('input',()=>{scheduleAutosave();renderCareScore();});
+  document.getElementById('today').addEventListener('change',()=>{scheduleAutosave();renderCareScore();});
+  document.getElementById('slpSleep').addEventListener('input',()=>{calcSleepTotal();renderCareScore();});
+  document.getElementById('slpWake').addEventListener('input',()=>{calcSleepTotal();renderCareScore();});
+  document.getElementById('slpPillow').addEventListener('change',e=>{
+    document.getElementById('pillowOtherWrap').style.display=(e.target.value==='기타')?'inline-flex':'none';
+    scheduleAutosave();renderCareScore();});
+  document.querySelectorAll('#slpTags .qchip').forEach(b=>b.onclick=()=>{
+    const t=b.dataset.t;const i=sleepTags.indexOf(t);if(i>=0)sleepTags.splice(i,1);else sleepTags.push(t);
+    renderSleepChips();scheduleAutosave();renderCareScore();});
+  document.querySelectorAll('#slpLevel .qchip').forEach(b=>b.onclick=()=>{
+    sleepLevel=(sleepLevel===b.dataset.l?"":b.dataset.l);renderSleepChips();scheduleAutosave();renderCareScore();});
   document.getElementById('copyBtn').onclick=()=>{const ta=document.getElementById('exportText');if(!ta.value)buildExport();ta.select();
     navigator.clipboard.writeText(ta.value).then(()=>{document.getElementById('copyBtn').textContent="복사됨 ✓";setTimeout(()=>document.getElementById('copyBtn').textContent="요약 복사",1800);});};
   document.getElementById('refreshExport').onclick=buildExport;
