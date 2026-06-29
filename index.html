@@ -111,6 +111,22 @@
   .sleeprow input[type=time]{font-family:inherit;font-size:13px;border:1px solid var(--line);border-radius:7px;padding:6px 8px}
   .sleeptotal{font-weight:700;color:var(--good);font-size:13.5px}
   .qual-chips{display:flex;flex-wrap:wrap;gap:6px}
+  .freqsel{margin-left:8px;font-size:12px;padding:4px 6px;border:1px solid var(--line);border-radius:7px;background:var(--card);color:var(--ink)}
+  .goals{background:linear-gradient(180deg,#13433A,#0E3730);color:#EAF3F0;border-radius:12px;margin:14px 0 4px;overflow:hidden}
+  .goals summary{list-style:none;cursor:pointer;padding:12px 16px;display:flex;align-items:center;gap:10px;font-size:13.5px;font-weight:600}
+  .goals summary::-webkit-details-marker{display:none}
+  .goals .gflag{font-size:18px}
+  .goals .gline{flex:1;line-height:1.4}
+  .goals .gline b{color:#7FE0CC}
+  .goals .gtoggle{font-size:11px;color:#9FC9BF;font-weight:500;white-space:nowrap}
+  .goals[open] .gtoggle::after{content:"접기 ▲"}
+  .goals:not([open]) .gtoggle::after{content:"펼치기 ▼"}
+  .goals .gbody{padding:2px 16px 14px;border-top:1px solid rgba(255,255,255,.12)}
+  .goals .gh{font-size:11px;letter-spacing:.06em;color:#7FE0CC;font-weight:700;margin:12px 0 6px}
+  .goals .gitem{display:flex;gap:8px;font-size:12.5px;line-height:1.5;padding:2px 0;color:#DCEAE6}
+  .goals .gitem .gd{color:#8FB8AF;white-space:nowrap;font-weight:600}
+  .goals .gkeep{display:flex;flex-wrap:wrap;gap:6px}
+  .goals .gkeep span{background:rgba(127,224,204,.14);border:1px solid rgba(127,224,204,.25);border-radius:999px;padding:4px 10px;font-size:12px;color:#EAF3F0}
   .subh{font-size:12.5px;font-weight:700;color:var(--ink);margin:16px 0 8px;padding-top:12px;border-top:1px solid var(--line-soft);display:flex;align-items:center;gap:6px}
   .subh:first-of-type{border-top:0;padding-top:0;margin-top:6px}
   .subh span{font-weight:400;color:var(--faint);font-size:11px}
@@ -162,6 +178,31 @@
     <h1>경추 증상 기록</h1>
     <p class="sub">왼쪽에서 입력하면 오른쪽 추세·상세가 즉시 갱신됩니다. 입력하는 순간 자동 저장되고, 안 누른 시점은 "미입력"으로 남습니다.</p>
     <div class="disclaimer">이 기록은 진단 도구가 아니라 <b>추적·소통용</b>입니다. 판단은 진욱님의 MRI를 직접 본 의료진이 합니다. 기록을 진료 때 그대로 보여주세요.</div>
+
+    <details class="goals">
+      <summary>
+        <span class="gflag">🎯</span>
+        <span class="gline"><b>1년 후, 아이들과 즐겁게 여행</b> — 오늘의 척추위생이 그 길입니다.</span>
+        <span class="gtoggle"></span>
+      </summary>
+      <div class="gbody">
+        <div class="gh">목표</div>
+        <div class="gitem"><span class="gd">~26.08</span><span>호전 시그널 만나기 (척추위생 6주) — 6주면 뭔가 달라져야 한다</span></div>
+        <div class="gitem"><span class="gd">~26.12</span><span>방사통 없애기 (척추위생 6개월)</span></div>
+        <div class="gitem"><span class="gd">~27.06</span><span>MRI 호전 시그널 만나기 (척추위생 1년)</span></div>
+        <div class="gitem"><span class="gd">~27.12</span><span>척수관 여유 만나기</span></div>
+        <div class="gitem"><span class="gd">1년 후~</span><span>아이들과 즐겁게 여행 가기</span></div>
+        <div class="gh">꼭 지킨다</div>
+        <div class="gkeep">
+          <span>1 척추위생 철저</span>
+          <span>2 신전운동 30분마다 5초×5회</span>
+          <span>3 매일 30분 이상 걷기</span>
+          <span>4 7시간 이상 수면</span>
+          <span>5 안적천</span>
+          <span>6 웃는 얼굴</span>
+        </div>
+      </div>
+    </details>
   </header>
 
   <div class="layout">
@@ -516,7 +557,11 @@ async function persist(){const ok=await storeSet(STORE_KEY,JSON.stringify(LOG));
   document.getElementById('storeWarn').classList.toggle('show',!ok);scheduleDrivePush();return ok;}
 
 
-let spotsState={left:[],right:[]},tpData={},tpTouched={},tpTimes={},curTp="morning";
+let spotsState={left:[],right:[]},tpData={},tpFreq={},tpTouched={},tpTimes={},curTp="morning";
+const FREQS=[["지속",1.0],["자주",0.9],["반반",0.8],["종종",0.7],["가끔",0.6]];
+const FREQ_MULT={"지속":1,"자주":0.9,"반반":0.8,"종종":0.7,"가끔":0.6};
+function effVal(tp,spotId){if(!tp)return null;const v=(tp.vals||{})[spotId];if(v==null)return null;
+  const f=(tp.freq||{})[spotId]||"지속";return +(v*(FREQ_MULT[f]!=null?FREQ_MULT[f]:1)).toFixed(2);}
 function newId(){return "s"+Math.random().toString(36).slice(2,8);}
 
 function buildReferred(){const box=document.getElementById("referredSliders");box.innerHTML="";
@@ -543,7 +588,7 @@ function toggleRegion(side,loc){const idx=spotsState[side].findIndex(s=>s.loc===
 function removeSpot(side,id){spotsState[side]=spotsState[side].filter(s=>s.id!==id);
   Object.values(tpData).forEach(v=>{if(v)delete v[id];});renderGrid(side);renderEditors(side);renderTp();scheduleAutosave();}
 
-function ensureTp(){TPS.forEach(t=>{if(!tpData[t.k])tpData[t.k]={};});}
+function ensureTp(){TPS.forEach(t=>{if(!tpData[t.k])tpData[t.k]={};if(!tpFreq[t.k])tpFreq[t.k]={};});}
 function buildTpTabs(){const box=document.getElementById("tpTabs");box.innerHTML="";
   TPS.forEach(t=>{const d=document.createElement("div");d.className="tptab"+(t.k===curTp?" active":"")+(tpTouched[t.k]?" filled":"");d.dataset.k=t.k;
     d.innerHTML=`<div class="tpname">${t.n}</div><div class="tpstate">${tpTouched[t.k]?"입력됨":"미입력"}</div>`;
@@ -555,13 +600,18 @@ function renderTp(){ensureTp();const body=document.getElementById("tpBody");
   if(spots.length===0){body.innerHTML='<div class="defineNote">먼저 위에서 증상 부위를 선택하세요.</div>';return;}
   body.innerHTML="";
   spots.forEach(sp=>{const v=(tpData[curTp]&&tpData[curTp][sp.id]!=null)?tpData[curTp][sp.id]:0;
+    const fr=(tpFreq[curTp]&&tpFreq[curTp][sp.id])?tpFreq[curTp][sp.id]:"지속";
     const row=document.createElement("div");row.className="srow";
     row.innerHTML=`<div class="sinfo"><div class="sloc">${sp.side} · ${sp.loc}</div><div class="smeta">${sp.quality||"성질 미정"}</div></div>
-      <input type="range" min="0" max="10" step="0.5" value="${v}"><span class="sval ${v>0?'on':''}">${v}</span>`;
-    const range=row.querySelector("input"),val=row.querySelector(".sval");
+      <input type="range" min="0" max="10" step="0.5" value="${v}"><span class="sval ${v>0?'on':''}">${v}</span>
+      <select class="freqsel">${FREQS.map(f=>`<option value="${f[0]}"${f[0]===fr?' selected':''}>${f[0]}</option>`).join("")}</select>`;
+    const range=row.querySelector("input"),val=row.querySelector(".sval"),fsel=row.querySelector(".freqsel");
     range.oninput=()=>{const n=+range.value;val.textContent=n;val.classList.toggle("on",n>0);
       if(!tpData[curTp])tpData[curTp]={};spots.forEach(s=>{if(tpData[curTp][s.id]==null)tpData[curTp][s.id]=0;});
       tpData[curTp][sp.id]=n;tpTouched[curTp]=true;buildTpTabs();scheduleAutosave();};
+    fsel.onchange=()=>{if(!tpFreq[curTp])tpFreq[curTp]={};tpFreq[curTp][sp.id]=fsel.value;
+      if(!tpData[curTp]||tpData[curTp][sp.id]==null){if(!tpData[curTp])tpData[curTp]={};tpData[curTp][sp.id]=+range.value;}
+      tpTouched[curTp]=true;buildTpTabs();scheduleAutosave();};
     body.appendChild(row);});}
 
 function bindFlags(){document.querySelectorAll('#flags input').forEach(i=>i.addEventListener('change',()=>{
@@ -569,7 +619,7 @@ function bindFlags(){document.querySelectorAll('#flags input').forEach(i=>i.addE
   const any=[...document.querySelectorAll('#flags input')].some(x=>x.checked);
   document.getElementById('alertBanner').classList.toggle('show',any);}));}
 
-function gather(){const tp={};TPS.forEach(t=>{if(tpTouched[t.k])tp[t.k]={time:tpTimes[t.k]||"",vals:{...(tpData[t.k]||{})}};});
+function gather(){const tp={};TPS.forEach(t=>{if(tpTouched[t.k])tp[t.k]={time:tpTimes[t.k]||"",vals:{...(tpData[t.k]||{})},freq:{...(tpFreq[t.k]||{})}};});
   return{date:document.getElementById('entryDate').value,spots:{left:spotsState.left,right:spotsState.right},timepoints:tp,
     referred:REF_PARTS.map((p,i)=>parseInt(document.querySelector(`[data-ref="${i}"]`).value)||0),
     morning:(document.querySelector('input[name="morning"]:checked')||{}).value||"",
@@ -636,8 +686,8 @@ function hasContent(e){return (e.spots.left.length||e.spots.right.length||Object
 function fillForm(e){e=e||{};
   spotsState={left:((e.spots||{}).left||[]).map(s=>({id:s.id||newId(),loc:s.loc,quality:s.quality||""})),
               right:((e.spots||{}).right||[]).map(s=>({id:s.id||newId(),loc:s.loc,quality:s.quality||""}))};
-  tpData={};tpTouched={};tpTimes={};ensureTp();
-  if(e.timepoints)Object.keys(e.timepoints).forEach(k=>{tpData[k]={...(e.timepoints[k].vals||{})};tpTouched[k]=true;tpTimes[k]=e.timepoints[k].time||"";});
+  tpData={};tpFreq={};tpTouched={};tpTimes={};ensureTp();
+  if(e.timepoints)Object.keys(e.timepoints).forEach(k=>{tpData[k]={...(e.timepoints[k].vals||{})};tpFreq[k]={...(e.timepoints[k].freq||{})};tpTouched[k]=true;tpTimes[k]=e.timepoints[k].time||"";});
   curTp="morning";renderGrid("left");renderGrid("right");renderEditors("left");renderEditors("right");buildTpTabs();renderTp();
   (e.referred||[0,0,0,0,0]).forEach((v,i)=>{const s=document.querySelector(`[data-ref="${i}"]`);if(s){s.value=v;document.querySelector(`[data-refval="${i}"]`).textContent=v;}});
   document.querySelectorAll('input[name="morning"]').forEach(r=>r.checked=(r.value===e.morning));
@@ -707,7 +757,7 @@ function lineChart(svgId,series,yMax,rankLabels,xLabels,yMin){
 function dayTpSum(e,side,tpKey){
   const tp=(e.timepoints||{})[tpKey];if(!tp)return null;
   const spots=((e.spots||{})[side])||[];if(!spots.length)return null;
-  let sum=0,any=false;spots.forEach(s=>{const v=(tp.vals||{})[s.id];if(v!=null){sum+=v;any=true;}});
+  let sum=0,any=false;spots.forEach(s=>{const v=effVal(tp,s.id);if(v!=null){sum+=v;any=true;}});
   return any?+sum.toFixed(1):null;}
 function dayActiveCount(e,side){
   const spots=((e.spots||{})[side])||[];if(!spots.length)return 0;
@@ -763,7 +813,9 @@ function renderDetail(){const box=document.getElementById('detailPanel');const e
     h+=`</tr></thead><tbody>`;
     spots.forEach(sp=>{h+=`<tr><td class="loccell">${sp.side} ${sp.loc}<div class="qm">${sp.quality||"-"}</div></td>`;
       TPS.forEach(t=>{const tp=(e.timepoints||{})[t.k];if(!tp){h+=`<td class="unfilled">미입력</td>`;}
-        else{const v=(tp.vals||{})[sp.id];const vv=(v==null?0:v);h+=`<td class="${vv>0?'vp':'v0'}">${vv}</td>`;}});h+=`</tr>`;});
+        else{const v=(tp.vals||{})[sp.id];const vv=(v==null?0:v);const f=(tp.freq||{})[sp.id]||"지속";
+          const tag=(vv>0&&f!=="지속")?`<div style="font-size:9px;color:var(--faint)">${f}</div>`:"";
+          h+=`<td class="${vv>0?'vp':'v0'}">${vv}${tag}</td>`;}});h+=`</tr>`;});
     h+=`</tbody></table>`;}else h+=`<div class="dsection">방사통 지점 입력 없음</div>`;
   h+=`<div class="dsection"><b>가장 먼 지점</b> — 왼: ${RANK_LABEL[farRankForDay(e,'left')]} / 오른: ${RANK_LABEL[farRankForDay(e,'right')]}</div>`;
   h+=`<div class="dsection"><b>연관통</b> — ${REF_PARTS.map((p,i)=>p+" "+((e.referred||[])[i]||0)).join(" · ")}</div>`;
@@ -826,7 +878,7 @@ function buildExport(){const dates=sortedDates();let t="■ 경추 증상 기록
     ["left","right"].forEach(side=>{const label=side==="left"?"왼":"오른";const spots=((e.spots||{})[side])||[];
       if(!spots.length){t+=`  ${label}: 증상 없음\n`;return;}
       spots.forEach(s=>{const seq=TPS.map(tp=>{const t2=(e.timepoints||{})[tp.k];if(!t2)return tp.n+":미입력";
-        const v=(t2.vals||{})[s.id];return tp.n+":"+(v==null?0:v);}).join(" / ");
+        const v=(t2.vals||{})[s.id];const f=(t2.freq||{})[s.id]||"지속";return tp.n+":"+(v==null?0:v)+((v>0&&f!=="지속")?("("+f+")"):"");}).join(" / ");
         t+=`  ${label} ${s.loc}(${s.quality||"-"}) → ${seq}\n`;});});
     t+=`  연관통: ${REF_PARTS.map((p,i)=>p+(e.referred?e.referred[i]:0)).join(" ")}\n`;
     if((e.flags||[]).length)t+=`  ⚠ 경고: ${e.flags.join(", ")}\n`;if(e.memo)t+=`  메모: ${e.memo}\n`;t+=careText(e.care);});
