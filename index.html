@@ -41,6 +41,24 @@
   @media (max-width:900px){.inputsgrid{grid-template-columns:1fr}}
   .incol{min-width:0}
   .bottompanels{margin-top:4px}
+  .toprow{display:grid;grid-template-columns:1.6fr 1fr;gap:14px;margin-top:16px;align-items:stretch}
+  @media (max-width:900px){.toprow{grid-template-columns:1fr}}
+  .trends{background:var(--bg-soft,#EEF2F1);border:1px solid var(--line);border-radius:16px;padding:16px;margin:16px 0 10px}
+  .trends .card{margin-bottom:0;height:100%;display:flex;flex-direction:column}
+  .trends .card svg{width:100%;height:188px;display:block;margin-top:auto}
+  .trendgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:stretch}
+  @media (max-width:900px){.trendgrid{grid-template-columns:1fr}}
+  .recordarea{border-top:2px dashed var(--line);margin-top:18px;padding-top:6px}
+  .recordhead{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:6px 0 12px}
+  .recordhead .rh-title{font-size:13px;font-weight:800;color:var(--ink);letter-spacing:.02em}
+  .gdatebar{display:flex;align-items:center;gap:10px;background:var(--good-soft);border:1px solid #BFE0D8;border-radius:10px;padding:8px 12px}
+  .gdatebar label{font-size:12.5px;font-weight:700;color:var(--good)}
+  .gdatebar input[type=date]{border:1px solid var(--line);border-radius:8px;padding:6px 10px;font-size:13px;color:var(--ink);background:var(--card)}
+  .spasmrow{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end}
+  .spasmrow .field{margin-bottom:0}
+  .spasmlist{margin-top:10px;display:flex;flex-direction:column;gap:6px}
+  .spasmitem{display:flex;align-items:center;gap:10px;background:#FBFCFC;border:1px solid var(--line);border-radius:8px;padding:7px 10px;font-size:13px}
+  .spasmitem .si-x{margin-left:auto;border:0;background:none;color:var(--faint);font-size:16px;cursor:pointer;line-height:1}
   .colsum{margin-left:auto;font-size:11.5px;letter-spacing:0;text-transform:none;color:var(--muted);font-weight:600;text-align:right;max-width:62%;line-height:1.4}
   .col-trend{position:sticky;top:14px}
   @media (max-width:1000px){.col-trend{position:static}}
@@ -192,8 +210,7 @@
   <header>
     <div class="kicker">Cervical Symptom Diary</div>
     <h1>경추 증상 기록 <span style="color:var(--good);font-size:.62em;font-weight:700;vertical-align:middle">— 할 수 있다!</span></h1>
-    <p class="sub">왼쪽에서 입력하면 오른쪽 추세·상세가 즉시 갱신됩니다. 입력하는 순간 자동 저장되며, 누르지 않은 시점은 "미입력"으로 남습니다.</p>
-    <div class="disclaimer">이 기록은 진단 도구가 아니라 <b>추적·소통용</b>입니다. 판단은 진욱님의 MRI를 직접 본 의료진이 합니다. 기록을 진료 때 그대로 보여주세요.</div>
+    <p class="sub">입력하는 순간 자동 저장됩니다. 누르지 않은 시점은 "미입력"으로 남습니다. 위쪽은 추세, 아래쪽은 그날의 기록 입력입니다.</p>
 
     <details class="goals">
       <summary>
@@ -223,18 +240,23 @@
 
   <div class="board">
 
-    <div class="card" id="syncCard" style="padding:12px 16px">
-      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
-        <div style="display:flex;align-items:center;gap:9px">
-          <span id="syncDot" style="width:9px;height:9px;border-radius:50%;background:#C9D2CF;display:inline-block"></span>
-          <span id="syncStatus" style="font-size:13px;font-weight:600;color:var(--muted)">구글 드라이브: 연결 안 됨</span>
-        </div>
-        <div style="display:flex;gap:8px">
-          <button class="btn ghost" id="gConnect" style="width:auto;padding:8px 14px;font-size:13px">구글 연결</button>
-          <button class="btn ghost" id="gDisconnect" style="width:auto;padding:8px 14px;font-size:13px;display:none">연결 해제</button>
-        </div>
+    <div class="toprow">
+      <div class="card" style="display:flex;align-items:center">
+        <div class="disclaimer" style="margin:0">이 기록은 진단 도구가 아니라 <b>추적·소통용</b>입니다. 판단은 진욱님의 MRI를 직접 본 의료진이 합니다. 기록을 진료 때 그대로 보여주세요.</div>
       </div>
-      <div id="syncHint" style="font-size:11.5px;color:var(--faint);margin-top:8px">연결하면 jinwookok@gmail.com 드라이브에 자동 저장되어, 어느 기기에서나 같은 기록을 보게 됩니다.</div>
+      <div class="card" id="syncCard" style="padding:12px 16px;display:flex;flex-direction:column;justify-content:center">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+          <div style="display:flex;align-items:center;gap:9px">
+            <span id="syncDot" style="width:9px;height:9px;border-radius:50%;background:#C9D2CF;display:inline-block"></span>
+            <span id="syncStatus" style="font-size:12.5px;font-weight:600;color:var(--muted)">구글 드라이브: 연결 안 됨</span>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button class="btn ghost" id="gConnect" style="width:auto;padding:7px 12px;font-size:12.5px">구글 연결</button>
+            <button class="btn ghost" id="gDisconnect" style="width:auto;padding:7px 12px;font-size:12.5px;display:none">연결 해제</button>
+          </div>
+        </div>
+        <div id="syncHint" style="font-size:11px;color:var(--faint);margin-top:7px">연결하면 어느 기기에서나 같은 기록을 보게 됩니다.</div>
+      </div>
     </div>
 
     <!-- ============ TOP: TRENDS ============ -->
@@ -242,34 +264,32 @@
       <div class="colhead">추세 <span class="auto">실시간 반영</span></div>
       <div class="trendgrid">
         <div class="card">
-          <h2>중심화 추세 · 가장 멀리 내려온 지점</h2>
-          <p class="hint">선이 <b>아래로</b>=중심화(호전), <b>위로</b>=말초화(주의).</p>
-          <div class="legend"><span><i style="background:#C2622F"></i>왼팔(실선)</span><span><i style="background:#3B6EA5;border-top:2px dashed #3B6EA5;height:0;width:18px"></i>오른팔(점선)</span></div>
-          <svg id="farChart" viewBox="0 0 640 220"></svg>
-          <div class="axis-note"><span>아래 = 중심화(호전)</span><span>위 = 말초화(주의)</span></div>
+          <h2>증상 강도 추세 <span style="font-weight:400;color:var(--faint);font-size:12px">· 손별 합계</span></h2>
+          <p class="hint">각 시점에 그 손의 모든 지점 강도를 합한 값. 왼손=따뜻한 색(실선), 오른손=차가운 색(점선). 색이 진할수록 늦은 시점.</p>
+          <div class="legend">
+            <span><i style="background:#C2622F"></i>왼손(실선)</span>
+            <span><i style="background:#3B6EA5;border-top:2px dashed #3B6EA5;height:0;width:18px"></i>오른손(점선)</span>
+          </div>
+          <svg id="tpChart" viewBox="0 0 640 220"></svg>
         </div>
         <div class="card">
-          <h2>일별 척추위생 점수 추세 <span style="font-weight:400;color:var(--faint);font-size:12px">· 10점 만점</span></h2>
+          <h2>척추위생 점수 추세 <span style="font-weight:400;color:var(--faint);font-size:12px">· 10점 만점</span></h2>
           <p class="hint">하루 활동 점수의 흐름. 선이 <b>높을수록 척추위생을 잘 지킨 날</b>입니다.</p>
           <svg id="careScoreChart" viewBox="0 0 640 220"></svg>
         </div>
       </div>
       <details class="moretrends">
-        <summary>추세 더보기 · 시점별 강도 합계 · 증상 범위</summary>
+        <summary>추세 더보기 · 중심화(가장 먼 지점) · 증상 범위</summary>
         <div class="trendgrid" style="margin-top:12px">
           <div class="card">
-            <h2>일별 시점별 강도 추세 <span style="font-weight:400;color:var(--faint);font-size:12px">· 손별 합계</span></h2>
-            <p class="hint">각 시점에 그 손의 모든 지점 강도를 합한 값. 왼손은 따뜻한 색(실선), 오른손은 차가운 색(점선). 색이 진할수록 늦은 시점입니다.</p>
-            <div class="legend">
-              <span><i style="background:#C2622F"></i>왼손(실선)</span>
-              <span><i style="background:#3B6EA5;border-top:2px dashed #3B6EA5;height:0;width:18px"></i>오른손(점선)</span>
-              <span style="color:var(--faint)">연함→진함 = 기상직후→취침전</span>
-            </div>
-            <svg id="tpChart" viewBox="0 0 640 220"></svg>
+            <h2>중심화 추세 <span style="font-weight:400;color:var(--faint);font-size:12px">· 가장 멀리 내려온 지점</span></h2>
+            <p class="hint">선이 <b>아래로</b>=중심화(호전), <b>위로</b>=말초화(주의).</p>
+            <div class="legend"><span><i style="background:#C2622F"></i>왼팔(실선)</span><span><i style="background:#3B6EA5;border-top:2px dashed #3B6EA5;height:0;width:18px"></i>오른팔(점선)</span></div>
+            <svg id="farChart" viewBox="0 0 640 220"></svg>
           </div>
           <div class="card">
-            <h2>일별 증상 범위 <span style="font-weight:400;color:var(--faint);font-size:12px">· 증상 부위 개수</span></h2>
-            <p class="hint">그날 증상이 체크된 지점의 개수. 선이 <b>올라가면 범위 확대(주의)</b>, <b>내려가면 좁아짐(호전)</b>.</p>
+            <h2>증상 범위 추세 <span style="font-weight:400;color:var(--faint);font-size:12px">· 증상 부위 개수</span></h2>
+            <p class="hint">그날 증상이 체크된 지점의 개수. <b>올라가면 범위 확대(주의)</b>, <b>내려가면 좁아짐(호전)</b>.</p>
             <div class="legend"><span><i style="background:#C2622F"></i>왼손(실선)</span><span><i style="background:#3B6EA5;border-top:2px dashed #3B6EA5;height:0;width:18px"></i>오른손(점선)</span></div>
             <svg id="rangeChart" viewBox="0 0 640 220"></svg>
           </div>
@@ -277,18 +297,21 @@
       </details>
     </section>
 
-    <!-- ============ INPUT (2 columns) ============ -->
+    <!-- ============ RECORD INPUT ============ -->
     <div class="col-input" id="today">
-      <div class="inputsgrid">
+      <div class="recordarea">
+        <div class="recordhead">
+          <span class="rh-title">📋 그날의 기록</span>
+          <div class="gdatebar">
+            <label for="entryDate">이 날짜의 기록</label>
+            <input type="date" id="entryDate">
+          </div>
+        </div>
+        <div class="inputsgrid">
         <div class="incol">
-          <div class="colhead">방사통 증상 <span class="colsum" id="sumPain">증상 입력 없음</span></div>
+          <div class="colhead">방사통 · 미세 경련 <span class="colsum" id="sumPain">증상 입력 없음</span></div>
 
       <div class="card">
-        <div class="datebar">
-          <label for="entryDate">기록 날짜</label>
-          <input type="date" id="entryDate">
-        </div>
-
         <h2><span class="num-tag">1</span> 오늘의 증상 지점 정의 <span style="font-weight:400;color:var(--faint);font-size:12px">· 하루 1번</span></h2>
         <p class="hint">부위 버튼을 눌러 선택하세요. 선택된 부위는 ✓ 로 표시돼 중복 없이 고를 수 있습니다.</p>
         <div class="arms2">
@@ -316,6 +339,18 @@
       </div>
 
       <div class="card">
+        <h2><span class="num-tag">3</span> 미세 경련 <span style="font-weight:400;color:var(--faint);font-size:12px">· 방사통과 별개</span></h2>
+        <p class="hint">간헐적인 미세 경련을 부위·강도·횟수로 기록합니다. 강도 추세 그래프에는 섞이지 않고 따로 기록·표시됩니다.</p>
+        <div class="spasmrow">
+          <div class="field" style="flex:1 1 120px"><label>부위</label><input type="text" id="spRegion" placeholder="예: 왼쪽 종아리, 손등"></div>
+          <div class="field" style="flex:0 0 92px"><label>강도 <span class="micro">0–10</span></label><input type="number" id="spInt" min="0" max="10" step="0.5" placeholder="0"></div>
+          <div class="field" style="flex:0 0 92px"><label>횟수 <span class="micro">회</span></label><input type="number" id="spCount" min="0" placeholder="0"></div>
+          <button class="btn ghost" id="spAdd" style="flex:0 0 auto;width:auto;padding:9px 16px">추가</button>
+        </div>
+        <div class="spasmlist" id="spasmList"></div>
+      </div>
+
+      <div class="card">
         <h2 style="color:var(--alert)">⚠ 경고 신호 점검 <span style="font-weight:400;color:var(--faint);font-size:12px">· 하루 1번</span></h2>
         <p class="hint">신경뿌리를 넘어 <b>척수(myelopathy)</b> 문제를 시사할 수 있는 신호입니다. 하나라도 새로 생기거나 나빠지면 미루지 마세요.</p>
         <div id="flags">
@@ -335,7 +370,7 @@
           <div class="colhead">척추위생 · 연관통 <span class="colsum" id="sumCare">점수 10/10</span></div>
 
       <div class="card" id="careCard">
-        <h2><span class="num-tag">3</span> 척추위생 점수 <span style="font-weight:400;color:var(--faint);font-size:12px">· 기본 10점에서 가감</span></h2>
+        <h2><span class="num-tag">4</span> 척추위생 점수 <span style="font-weight:400;color:var(--faint);font-size:12px">· 기본 10점에서 가감</span></h2>
         <p class="hint">하루 활동을 입력하면 점수가 자동 계산됩니다. 무엇이 점수를 깎았는지 점수칸과 오른쪽 상세에서 볼 수 있습니다.</p>
 
         <div class="scoreband" id="scoreBand">
@@ -436,6 +471,7 @@
 
         </div><!-- /incol 척추위생·연관통 -->
       </div><!-- /inputsgrid -->
+      </div><!-- /recordarea -->
 
       <div class="save">
         <button class="btn" id="saveBtn">지금 저장 (수동 확인)</button>
@@ -477,7 +513,7 @@
 </div>
 
 <script>
-const APP_VERSION="1.5";
+const APP_VERSION="1.6";
 const LOCS=[
   {n:"목",r:1},{n:"어깨",r:2},{n:"위팔",r:3},{n:"팔꿈치",r:4},{n:"아래팔",r:5},
   {n:"손목",r:6},{n:"손등",r:7},{n:"손바닥",r:7},{n:"손날(척골측)",r:7},
@@ -593,6 +629,17 @@ async function persist(){const ok=await storeSet(STORE_KEY,JSON.stringify(LOG));
 
 
 let spotsState={left:[],right:[]},tpData={},tpFreq={},tpTouched={},tpTimes={},curTp="morning";
+let spasmState=[];
+function renderSpasm(){const box=document.getElementById('spasmList');if(!box)return;box.innerHTML="";
+  if(!spasmState.length){box.innerHTML='<div style="font-size:12px;color:var(--faint)">기록된 경련 없음</div>';return;}
+  spasmState.forEach((s,i)=>{const d=document.createElement('div');d.className='spasmitem';
+    d.innerHTML=`<span style="font-weight:600">${(s.region||"부위 미정").replace(/</g,'&lt;')}</span><span style="color:var(--muted)">강도 ${s.intensity||0} · ${s.count||0}회</span><button class="si-x" title="삭제">×</button>`;
+    d.querySelector('.si-x').onclick=()=>{spasmState.splice(i,1);renderSpasm();scheduleAutosave();};box.appendChild(d);});}
+function addSpasm(){const r=document.getElementById('spRegion').value.trim();
+  const it=parseFloat(document.getElementById('spInt').value)||0;const c=parseInt(document.getElementById('spCount').value)||0;
+  if(!r&&!it&&!c)return;spasmState.push({region:r,intensity:it,count:c});
+  document.getElementById('spRegion').value="";document.getElementById('spInt').value="";document.getElementById('spCount').value="";
+  renderSpasm();scheduleAutosave();}
 const FREQS=[["지속",1.0],["자주",0.9],["반반",0.8],["종종",0.7],["가끔",0.6]];
 const FREQ_MULT={"지속":1,"자주":0.9,"반반":0.8,"종종":0.7,"가끔":0.6};
 function effVal(tp,spotId){if(!tp)return null;const v=(tp.vals||{})[spotId];if(v==null)return null;
@@ -659,7 +706,7 @@ function gather(){const tp={};TPS.forEach(t=>{if(tpTouched[t.k])tp[t.k]={time:tp
     referred:REF_PARTS.map((p,i)=>parseInt(document.querySelector(`[data-ref="${i}"]`).value)||0),
     morning:(document.querySelector('input[name="morning"]:checked')||{}).value||"",
     flags:[...document.querySelectorAll('#flags input:checked')].map(c=>c.value),
-    memo:document.getElementById('memo').value.trim(),care:gatherCare(),savedAt:new Date().toISOString()};}
+    memo:document.getElementById('memo').value.trim(),spasm:[...spasmState],care:gatherCare(),savedAt:new Date().toISOString()};}
 function num(id){const v=parseFloat(document.getElementById(id).value);return isNaN(v)?0:v;}
 let sleepLevel="";let sleepTags=[];
 function gatherCare(){return{
@@ -718,8 +765,9 @@ function careHasContent(c){if(!c)return false;const mv=c.move||{},wk=c.work||{},
     sl.pillow||sl.sleepAt||sl.wakeAt||(sl.tags&&sl.tags.length)||sl.level||
     dl.headDown||dl.headDownMany||dl.badEvent||c.sneeze);}
 function hasContent(e){return (e.spots.left.length||e.spots.right.length||Object.keys(e.timepoints).length||
-  (e.referred||[]).some(v=>v>0)||e.morning||(e.flags||[]).length||e.memo||careHasContent(e.care));}
+  (e.referred||[]).some(v=>v>0)||e.morning||(e.flags||[]).length||e.memo||(e.spasm&&e.spasm.length)||careHasContent(e.care));}
 function fillForm(e){e=e||{};
+  spasmState=Array.isArray(e.spasm)?e.spasm.map(s=>({region:s.region||"",intensity:s.intensity||0,count:s.count||0})):[];renderSpasm();
   spotsState={left:((e.spots||{}).left||[]).map(s=>({id:s.id||newId(),loc:s.loc,quality:s.quality||""})),
               right:((e.spots||{}).right||[]).map(s=>({id:s.id||newId(),loc:s.loc,quality:s.quality||""}))};
   tpData={};tpFreq={};tpTouched={};tpTimes={};ensureTp();
@@ -856,6 +904,7 @@ function renderDetail(){const box=document.getElementById('detailPanel');const e
   h+=`<div class="dsection"><b>가장 먼 지점</b> — 왼: ${RANK_LABEL[farRankForDay(e,'left')]} / 오른: ${RANK_LABEL[farRankForDay(e,'right')]}</div>`;
   h+=`<div class="dsection"><b>연관통</b> — ${REF_PARTS.map((p,i)=>p+" "+((e.referred||[])[i]||0)).join(" · ")}</div>`;
   if((e.flags||[]).length)h+=`<div class="dflags"><b>⚠ 경고 신호:</b> ${e.flags.join(", ")}</div>`;
+  if((e.spasm||[]).length)h+=`<div class="dsection"><b>미세 경련</b> — ${e.spasm.map(s=>`${(s.region||"부위미정").replace(/</g,'&lt;')} 강도${s.intensity||0}·${s.count||0}회`).join(" / ")}</div>`;
   if(e.memo)h+=`<div class="dsection"><b>메모</b> — ${e.memo.replace(/</g,'&lt;')}</div>`;
   h+=careDetailHtml(e.care);
   h+=`<button class="ddel" id="detailDel">이 날짜 기록 삭제</button>`;box.innerHTML=h;
@@ -928,6 +977,7 @@ function buildExport(){const dates=sortedDates();let t="■ 경추 증상 기록
         const v=(t2.vals||{})[s.id];const f=(t2.freq||{})[s.id]||"지속";return tp.n+":"+(v==null?0:v)+((v>0&&f!=="지속")?("("+f+")"):"");}).join(" / ");
         t+=`  ${label} ${s.loc}(${s.quality||"-"}) → ${seq}\n`;});});
     t+=`  연관통: ${REF_PARTS.map((p,i)=>p+(e.referred?e.referred[i]:0)).join(" ")}\n`;
+    if((e.spasm||[]).length)t+=`  미세 경련: ${e.spasm.map(s=>`${s.region||"부위미정"} 강도${s.intensity||0}·${s.count||0}회`).join(", ")}\n`;
     if((e.flags||[]).length)t+=`  ⚠ 경고: ${e.flags.join(", ")}\n`;if(e.memo)t+=`  메모: ${e.memo}\n`;t+=careText(e.care);});
   document.getElementById('exportText').value=t;}
 
@@ -945,6 +995,8 @@ async function init(){buildReferred();bindFlags();ensureTp();
   document.getElementById('entryDate').value=todayStr();
   document.getElementById('entryDate').onchange=()=>{loadDate();selectedDate=document.getElementById('entryDate').value;refreshTrend();};
   document.getElementById('saveBtn').onclick=manualSave;
+  document.getElementById('spAdd').onclick=addSpasm;
+  document.getElementById('spRegion').addEventListener('keydown',e=>{if(e.key==='Enter')addSpasm();});
   document.getElementById('today').addEventListener('input',()=>{scheduleAutosave();renderCareScore();});
   document.getElementById('today').addEventListener('change',()=>{scheduleAutosave();renderCareScore();});
   document.getElementById('slpSleep').addEventListener('input',()=>{calcSleepTotal();renderCareScore();});
