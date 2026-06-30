@@ -22,7 +22,7 @@
   header{padding:24px 0 12px}
   .kicker{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);font-weight:600}
   h1{font-size:25px;font-weight:700;letter-spacing:-.01em;margin-top:6px}
-  .sub{color:var(--muted);font-size:13.5px;margin-top:8px;max-width:70ch}
+  .sub{color:var(--muted);font-size:13.5px;margin-top:8px;max-width:70ch;word-break:keep-all}
   .disclaimer{background:var(--card);border:1px solid var(--line);border-left:3px solid var(--muted);border-radius:10px;padding:11px 14px;margin-top:14px;font-size:12.5px;color:var(--muted)}
 
   /* split layout */
@@ -73,11 +73,11 @@
   .tptab.filled .tpstate{color:var(--good)}
   .tptime{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);margin-bottom:14px}
   .tptime input[type=time]{font-family:inherit;font-size:13px;border:1px solid var(--line);border-radius:7px;padding:5px 8px}
-  .srow{display:flex;align-items:center;gap:14px;padding:11px 0;border-bottom:1px solid var(--line-soft)}
+  .srow{display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid var(--line-soft);flex-wrap:wrap}
   .srow:last-child{border-bottom:0}
-  .sinfo{flex:1;min-width:0}.sinfo .sloc{font-size:13.5px;font-weight:600}.sinfo .smeta{font-size:11.5px;color:var(--faint)}
-  .srow input[type=range]{flex:1.4;max-width:220px}
-  .srow .sval{min-width:34px;text-align:center;font-variant-numeric:tabular-nums;font-weight:700;font-size:14px;border-radius:7px;padding:3px 0;background:#EEF1F0;color:var(--muted)}
+  .sinfo{flex:0 0 96px;min-width:96px}.sinfo .sloc{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.sinfo .smeta{font-size:11px;color:var(--faint);white-space:nowrap}
+  .srow input[type=range]{flex:1 1 130px;min-width:110px;max-width:240px}
+  .srow .sval{flex:0 0 auto;min-width:34px;text-align:center;font-variant-numeric:tabular-nums;font-weight:700;font-size:14px;border-radius:7px;padding:3px 6px;background:#EEF1F0;color:var(--muted)}
   .srow .sval.on{background:var(--good-soft);color:var(--good)}
   .defineNote{font-size:12.5px;color:var(--faint);text-align:center;padding:18px 8px}
   .chips{display:flex;flex-wrap:wrap;gap:7px}
@@ -111,7 +111,7 @@
   .sleeprow input[type=time]{font-family:inherit;font-size:13px;border:1px solid var(--line);border-radius:7px;padding:6px 8px}
   .sleeptotal{font-weight:700;color:var(--good);font-size:13.5px}
   .qual-chips{display:flex;flex-wrap:wrap;gap:6px}
-  .freqsel{margin-left:8px;font-size:12px;padding:4px 6px;border:1px solid var(--line);border-radius:7px;background:var(--card);color:var(--ink)}
+  .freqsel{margin-left:0;flex:0 0 auto;width:auto;font-size:12px;padding:5px 8px;border:1px solid var(--line);border-radius:7px;background:var(--card);color:var(--ink)}
   .goals{background:linear-gradient(180deg,#13433A,#0E3730);color:#EAF3F0;border-radius:12px;margin:14px 0 4px;overflow:hidden}
   .goals summary{list-style:none;cursor:pointer;padding:12px 16px;display:flex;align-items:center;gap:10px;font-size:13.5px;font-weight:600}
   .goals summary::-webkit-details-marker{display:none}
@@ -175,8 +175,8 @@
 
   <header>
     <div class="kicker">Cervical Symptom Diary</div>
-    <h1>경추 증상 기록</h1>
-    <p class="sub">왼쪽에서 입력하면 오른쪽 추세·상세가 즉시 갱신됩니다. 입력하는 순간 자동 저장되고, 안 누른 시점은 "미입력"으로 남습니다.</p>
+    <h1>경추 증상 기록 <span style="color:var(--good);font-size:.62em;font-weight:700;vertical-align:middle">— 할 수 있다!</span></h1>
+    <p class="sub">왼쪽에서 입력하면 오른쪽 추세·상세가 즉시 갱신됩니다. 입력하는 순간 자동 저장되며, 누르지 않은 시점은 "미입력"으로 남습니다.</p>
     <div class="disclaimer">이 기록은 진단 도구가 아니라 <b>추적·소통용</b>입니다. 판단은 진욱님의 MRI를 직접 본 의료진이 합니다. 기록을 진료 때 그대로 보여주세요.</div>
 
     <details class="goals">
