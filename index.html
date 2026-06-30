@@ -18,7 +18,8 @@
   *{box-sizing:border-box;margin:0;padding:0}
   html,body{background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased}
   body{line-height:1.6;padding:0 18px 90px;font-size:15px}
-  .wrap{max-width:1340px;margin:0 auto}
+  .wrap{max-width:1340px;margin:0 auto;position:relative}
+  .verbadge{position:fixed;top:8px;right:10px;background:var(--ink);color:#fff;font-size:10px;font-weight:600;padding:2px 8px;border-radius:999px;opacity:.45;z-index:60;pointer-events:none;letter-spacing:.02em}
   header{padding:24px 0 12px}
   .kicker{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);font-weight:600}
   h1{font-size:25px;font-weight:700;letter-spacing:-.01em;margin-top:6px}
@@ -28,6 +29,19 @@
   /* split layout */
   .layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px;align-items:start;margin-top:16px}
   @media (max-width:1000px){.layout{grid-template-columns:1fr}}
+  .board{margin-top:16px}
+  .trends{margin-bottom:8px}
+  .trendgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start}
+  @media (max-width:900px){.trendgrid{grid-template-columns:1fr}}
+  .moretrends{margin-top:4px}
+  .moretrends>summary{list-style:none;cursor:pointer;font-size:12px;font-weight:600;color:var(--good);padding:8px 2px}
+  .moretrends>summary::-webkit-details-marker{display:none}
+  .moretrends:not([open])>summary::after{content:" ▾"}.moretrends[open]>summary::after{content:" ▴"}
+  .inputsgrid{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start}
+  @media (max-width:900px){.inputsgrid{grid-template-columns:1fr}}
+  .incol{min-width:0}
+  .bottompanels{margin-top:4px}
+  .colsum{margin-left:auto;font-size:11.5px;letter-spacing:0;text-transform:none;color:var(--muted);font-weight:600;text-align:right;max-width:62%;line-height:1.4}
   .col-trend{position:sticky;top:14px}
   @media (max-width:1000px){.col-trend{position:static}}
   .colhead{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);font-weight:700;margin-bottom:10px;display:flex;align-items:center;gap:8px}
@@ -172,6 +186,8 @@
 </head>
 <body>
 <div class="wrap">
+<div class="verbadge" id="verBadge"></div>
+
 
   <header>
     <div class="kicker">Cervical Symptom Diary</div>
@@ -205,25 +221,67 @@
     </details>
   </header>
 
-  <div class="layout">
+  <div class="board">
 
-    <!-- ============ LEFT: INPUT ============ -->
-    <div class="col-input" id="today">
-      <div class="colhead">입력<span class="auto" id="autoState">자동 저장</span></div>
+    <div class="card" id="syncCard" style="padding:12px 16px">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+        <div style="display:flex;align-items:center;gap:9px">
+          <span id="syncDot" style="width:9px;height:9px;border-radius:50%;background:#C9D2CF;display:inline-block"></span>
+          <span id="syncStatus" style="font-size:13px;font-weight:600;color:var(--muted)">구글 드라이브: 연결 안 됨</span>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn ghost" id="gConnect" style="width:auto;padding:8px 14px;font-size:13px">구글 연결</button>
+          <button class="btn ghost" id="gDisconnect" style="width:auto;padding:8px 14px;font-size:13px;display:none">연결 해제</button>
+        </div>
+      </div>
+      <div id="syncHint" style="font-size:11.5px;color:var(--faint);margin-top:8px">연결하면 jinwookok@gmail.com 드라이브에 자동 저장되어, 어느 기기에서나 같은 기록을 보게 됩니다.</div>
+    </div>
 
-      <div class="card" id="syncCard" style="padding:14px 16px">
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
-          <div style="display:flex;align-items:center;gap:9px">
-            <span id="syncDot" style="width:9px;height:9px;border-radius:50%;background:#C9D2CF;display:inline-block"></span>
-            <span id="syncStatus" style="font-size:13px;font-weight:600;color:var(--muted)">구글 드라이브: 연결 안 됨</span>
+    <!-- ============ TOP: TRENDS ============ -->
+    <section class="trends">
+      <div class="colhead">추세 <span class="auto">실시간 반영</span></div>
+      <div class="trendgrid">
+        <div class="card">
+          <h2>중심화 추세 · 가장 멀리 내려온 지점</h2>
+          <p class="hint">선이 <b>아래로</b>=중심화(호전), <b>위로</b>=말초화(주의).</p>
+          <div class="legend"><span><i style="background:#C2622F"></i>왼팔(실선)</span><span><i style="background:#3B6EA5;border-top:2px dashed #3B6EA5;height:0;width:18px"></i>오른팔(점선)</span></div>
+          <svg id="farChart" viewBox="0 0 640 220"></svg>
+          <div class="axis-note"><span>아래 = 중심화(호전)</span><span>위 = 말초화(주의)</span></div>
+        </div>
+        <div class="card">
+          <h2>일별 척추위생 점수 추세 <span style="font-weight:400;color:var(--faint);font-size:12px">· 10점 만점</span></h2>
+          <p class="hint">하루 활동 점수의 흐름. 선이 <b>높을수록 척추위생을 잘 지킨 날</b>입니다.</p>
+          <svg id="careScoreChart" viewBox="0 0 640 220"></svg>
+        </div>
+      </div>
+      <details class="moretrends">
+        <summary>추세 더보기 · 시점별 강도 합계 · 증상 범위</summary>
+        <div class="trendgrid" style="margin-top:12px">
+          <div class="card">
+            <h2>일별 시점별 강도 추세 <span style="font-weight:400;color:var(--faint);font-size:12px">· 손별 합계</span></h2>
+            <p class="hint">각 시점에 그 손의 모든 지점 강도를 합한 값. 왼손은 따뜻한 색(실선), 오른손은 차가운 색(점선). 색이 진할수록 늦은 시점입니다.</p>
+            <div class="legend">
+              <span><i style="background:#C2622F"></i>왼손(실선)</span>
+              <span><i style="background:#3B6EA5;border-top:2px dashed #3B6EA5;height:0;width:18px"></i>오른손(점선)</span>
+              <span style="color:var(--faint)">연함→진함 = 기상직후→취침전</span>
+            </div>
+            <svg id="tpChart" viewBox="0 0 640 220"></svg>
           </div>
-          <div style="display:flex;gap:8px">
-            <button class="btn ghost" id="gConnect" style="width:auto;padding:8px 14px;font-size:13px">구글 연결</button>
-            <button class="btn ghost" id="gDisconnect" style="width:auto;padding:8px 14px;font-size:13px;display:none">연결 해제</button>
+          <div class="card">
+            <h2>일별 증상 범위 <span style="font-weight:400;color:var(--faint);font-size:12px">· 증상 부위 개수</span></h2>
+            <p class="hint">그날 증상이 체크된 지점의 개수. 선이 <b>올라가면 범위 확대(주의)</b>, <b>내려가면 좁아짐(호전)</b>.</p>
+            <div class="legend"><span><i style="background:#C2622F"></i>왼손(실선)</span><span><i style="background:#3B6EA5;border-top:2px dashed #3B6EA5;height:0;width:18px"></i>오른손(점선)</span></div>
+            <svg id="rangeChart" viewBox="0 0 640 220"></svg>
           </div>
         </div>
-        <div id="syncHint" style="font-size:11.5px;color:var(--faint);margin-top:8px">연결하면 jinwookok@gmail.com 드라이브에 자동 저장되어, 어느 기기에서나 같은 기록을 보게 됩니다.</div>
-      </div>
+      </details>
+    </section>
+
+    <!-- ============ INPUT (2 columns) ============ -->
+    <div class="col-input" id="today">
+      <div class="inputsgrid">
+        <div class="incol">
+          <div class="colhead">방사통 증상 <span class="colsum" id="sumPain">증상 입력 없음</span></div>
 
       <div class="card">
         <div class="datebar">
@@ -258,22 +316,26 @@
       </div>
 
       <div class="card">
-        <h2><span class="num-tag">3</span> 연관통 · 근육·뻐근함 <span style="font-weight:400;color:var(--faint);font-size:12px">· 하루 1번</span></h2>
-        <p class="hint">목·어깨·승모·견갑·윗등의 그날 전반적 뻐근함 (0 없음 — 10 심함)</p>
-        <div id="referredSliders"></div>
-        <div class="field" style="margin-top:6px">
-          <label>아침에 일어났을 때 이 부위들의 통증은?</label>
-          <div class="chips" style="gap:8px">
-            <label class="chip"><input type="radio" name="morning" value="거의 없음"><span>거의 없음</span></label>
-            <label class="chip"><input type="radio" name="morning" value="약간"><span>약간</span></label>
-            <label class="chip"><input type="radio" name="morning" value="평소와 비슷"><span>평소와 비슷</span></label>
-            <label class="chip"><input type="radio" name="morning" value="더 심함"><span>더 심함</span></label>
-          </div>
+        <h2 style="color:var(--alert)">⚠ 경고 신호 점검 <span style="font-weight:400;color:var(--faint);font-size:12px">· 하루 1번</span></h2>
+        <p class="hint">신경뿌리를 넘어 <b>척수(myelopathy)</b> 문제를 시사할 수 있는 신호입니다. 하나라도 새로 생기거나 나빠지면 미루지 마세요.</p>
+        <div id="flags">
+          <label class="flag"><input type="checkbox" value="손 미세동작 둔해짐"><div><div class="ft">손 미세동작이 둔해짐</div><div class="fd">단추 끼우기·젓가락질·글씨가 어색하거나 서툴러짐</div></div></label>
+          <label class="flag"><input type="checkbox" value="물건을 자주 떨어뜨림"><div><div class="ft">물건을 자주 떨어뜨림</div><div class="fd">손에 힘이 빠지거나 쥐는 감각이 둔함</div></div></label>
+          <label class="flag"><input type="checkbox" value="걸음·균형 이상"><div><div class="ft">걸음·균형이 달라짐</div><div class="fd">발이 헛디뎌지거나 균형 잡기가 전과 다름</div></div></label>
+          <label class="flag"><input type="checkbox" value="양손 저림 동시 악화"><div><div class="ft">양손 저림이 동시에 악화</div><div class="fd">한쪽이 아니라 양손이 함께 나빠짐</div></div></label>
+          <label class="flag"><input type="checkbox" value="다리 저림·위약·감각이상"><div><div class="ft">다리에 저림·힘빠짐·감각 이상</div><div class="fd">팔뿐 아니라 다리로 증상이 내려옴</div></div></label>
+          <label class="flag"><input type="checkbox" value="대소변 조절 문제"><div><div class="ft">대소변 조절이 평소와 다름</div><div class="fd">이 신호는 즉시 응급 진료를 고려해야 합니다</div></div></label>
         </div>
+        <div class="alert-banner" id="alertBanner"><b>이 신호는 그냥 두지 마세요.</b> 신경·척수 문제를 시사할 수 있어, 다음 진료를 앞당기거나 의료진에게 바로 알리는 게 안전합니다. 갑작스럽거나 빠르게 나빠지면 응급 진료를 고려하세요.</div>
       </div>
 
+        </div><!-- /incol 방사통 -->
+
+        <div class="incol">
+          <div class="colhead">척추위생 · 연관통 <span class="colsum" id="sumCare">점수 10/10</span></div>
+
       <div class="card" id="careCard">
-        <h2><span class="num-tag">4</span> 척추위생 점수 <span style="font-weight:400;color:var(--faint);font-size:12px">· 기본 10점에서 가감</span></h2>
+        <h2><span class="num-tag">3</span> 척추위생 점수 <span style="font-weight:400;color:var(--faint);font-size:12px">· 기본 10점에서 가감</span></h2>
         <p class="hint">하루 활동을 입력하면 점수가 자동 계산됩니다. 무엇이 점수를 깎았는지 점수칸과 오른쪽 상세에서 볼 수 있습니다.</p>
 
         <div class="scoreband" id="scoreBand">
@@ -353,66 +415,38 @@
       </div>
 
       <div class="card">
-        <h2 style="color:var(--alert)">⚠ 경고 신호 점검 <span style="font-weight:400;color:var(--faint);font-size:12px">· 하루 1번</span></h2>
-        <p class="hint">신경뿌리를 넘어 <b>척수(myelopathy)</b> 문제를 시사할 수 있는 신호입니다. 하나라도 새로 생기거나 나빠지면 미루지 마세요.</p>
-        <div id="flags">
-          <label class="flag"><input type="checkbox" value="손 미세동작 둔해짐"><div><div class="ft">손 미세동작이 둔해짐</div><div class="fd">단추 끼우기·젓가락질·글씨가 어색하거나 서툴러짐</div></div></label>
-          <label class="flag"><input type="checkbox" value="물건을 자주 떨어뜨림"><div><div class="ft">물건을 자주 떨어뜨림</div><div class="fd">손에 힘이 빠지거나 쥐는 감각이 둔함</div></div></label>
-          <label class="flag"><input type="checkbox" value="걸음·균형 이상"><div><div class="ft">걸음·균형이 달라짐</div><div class="fd">발이 헛디뎌지거나 균형 잡기가 전과 다름</div></div></label>
-          <label class="flag"><input type="checkbox" value="양손 저림 동시 악화"><div><div class="ft">양손 저림이 동시에 악화</div><div class="fd">한쪽이 아니라 양손이 함께 나빠짐</div></div></label>
-          <label class="flag"><input type="checkbox" value="다리 저림·위약·감각이상"><div><div class="ft">다리에 저림·힘빠짐·감각 이상</div><div class="fd">팔뿐 아니라 다리로 증상이 내려옴</div></div></label>
-          <label class="flag"><input type="checkbox" value="대소변 조절 문제"><div><div class="ft">대소변 조절이 평소와 다름</div><div class="fd">이 신호는 즉시 응급 진료를 고려해야 합니다</div></div></label>
+        <h2>연관통 · 근육·뻐근함 <span style="font-weight:400;color:var(--faint);font-size:12px">· 하루 1번</span></h2>
+        <p class="hint">목·어깨·승모·견갑·윗등의 그날 전반적 뻐근함 (0 없음 — 10 심함)</p>
+        <div id="referredSliders"></div>
+        <div class="field" style="margin-top:6px">
+          <label>아침에 일어났을 때 이 부위들의 통증은?</label>
+          <div class="chips" style="gap:8px">
+            <label class="chip"><input type="radio" name="morning" value="거의 없음"><span>거의 없음</span></label>
+            <label class="chip"><input type="radio" name="morning" value="약간"><span>약간</span></label>
+            <label class="chip"><input type="radio" name="morning" value="평소와 비슷"><span>평소와 비슷</span></label>
+            <label class="chip"><input type="radio" name="morning" value="더 심함"><span>더 심함</span></label>
+          </div>
         </div>
-        <div class="alert-banner" id="alertBanner"><b>이 신호는 그냥 두지 마세요.</b> 신경·척수 문제를 시사할 수 있어, 다음 진료를 앞당기거나 의료진에게 바로 알리는 게 안전합니다. 갑작스럽거나 빠르게 나빠지면 응급 진료를 고려하세요.</div>
       </div>
 
       <div class="card">
-        <h2><span class="num-tag">5</span> 메모 <span style="font-weight:400;color:var(--faint);font-size:12px">(선택)</span></h2>
+        <h2>메모 <span style="font-weight:400;color:var(--faint);font-size:12px">(선택)</span></h2>
         <textarea id="memo" placeholder="오늘 특이사항, 신전 중 느낌, 통증을 키운 활동 등"></textarea>
       </div>
 
+        </div><!-- /incol 척추위생·연관통 -->
+      </div><!-- /inputsgrid -->
+
       <div class="save">
         <button class="btn" id="saveBtn">지금 저장 (수동 확인)</button>
+        <span class="auto" id="autoState" style="font-size:12px;color:var(--faint)">자동 저장</span>
         <div class="saved-note" id="savedNote"></div>
         <div class="storewarn" id="storeWarn">브라우저 자동 저장이 안 되는 환경입니다. 기록이 사라지지 않도록 아래 <b>JSON 백업</b>을 사용하세요.</div>
       </div>
     </div>
 
-    <!-- ============ RIGHT: TREND + DETAIL ============ -->
-    <div class="col-trend">
-      <div class="colhead">추세 · 상세 <span class="auto">실시간 반영</span></div>
-
-      <div class="card">
-        <h2>중심화 추세 · 가장 멀리 내려온 지점</h2>
-        <p class="hint">선이 <b>아래로</b>=중심화(호전), <b>위로</b>=말초화(주의).</p>
-        <div class="legend"><span><i style="background:#C2622F"></i>왼팔(실선)</span><span><i style="background:#3B6EA5;border-top:2px dashed #3B6EA5;height:0;width:18px"></i>오른팔(점선)</span></div>
-        <svg id="farChart" viewBox="0 0 640 220"></svg>
-        <div class="axis-note"><span>아래 = 중심화(호전)</span><span>위 = 말초화(주의)</span></div>
-      </div>
-
-      <div class="card">
-        <h2>일별 시점별 강도 추세 <span style="font-weight:400;color:var(--faint);font-size:12px">· 손별 합계</span></h2>
-        <p class="hint">각 시점에 그 손의 모든 지점 강도를 합한 값. 왼손은 따뜻한 색(실선), 오른손은 차가운 색(점선). 색이 진할수록 늦은 시점입니다.</p>
-        <div class="legend">
-          <span><i style="background:#C2622F"></i>왼손(실선)</span>
-          <span><i style="background:#3B6EA5;border-top:2px dashed #3B6EA5;height:0;width:18px"></i>오른손(점선)</span>
-          <span style="color:var(--faint)">연함→진함 = 기상직후→취침전</span>
-        </div>
-        <svg id="tpChart" viewBox="0 0 640 220"></svg>
-      </div>
-
-      <div class="card">
-        <h2>일별 증상 범위 <span style="font-weight:400;color:var(--faint);font-size:12px">· 증상 부위 개수</span></h2>
-        <p class="hint">그날 증상이 체크된 지점의 개수. 선이 <b>올라가면 범위 확대(주의)</b>, <b>내려가면 좁아짐(호전)</b>.</p>
-        <div class="legend"><span><i style="background:#C2622F"></i>왼손(실선)</span><span><i style="background:#3B6EA5;border-top:2px dashed #3B6EA5;height:0;width:18px"></i>오른손(점선)</span></div>
-        <svg id="rangeChart" viewBox="0 0 640 220"></svg>
-      </div>
-
-      <div class="card">
-        <h2>일별 척추위생 점수 추세 <span style="font-weight:400;color:var(--faint);font-size:12px">· 10점 만점</span></h2>
-        <p class="hint">하루 활동 점수의 흐름. 선이 <b>높을수록 척추위생을 잘 지킨 날</b>입니다.</p>
-        <svg id="careScoreChart" viewBox="0 0 640 220"></svg>
-      </div>
+    <!-- ============ BOTTOM: DETAIL + TOOLS ============ -->
+    <div class="bottompanels">
 
       <div class="card">
         <h2>날짜별 상세 <span style="font-weight:400;color:var(--faint);font-size:12px">· 날짜를 누르면 펼쳐집니다</span></h2>
@@ -443,6 +477,7 @@
 </div>
 
 <script>
+const APP_VERSION="1.5";
 const LOCS=[
   {n:"목",r:1},{n:"어깨",r:2},{n:"위팔",r:3},{n:"팔꿈치",r:4},{n:"아래팔",r:5},
   {n:"손목",r:6},{n:"손등",r:7},{n:"손바닥",r:7},{n:"손날(척골측)",r:7},
@@ -676,6 +711,7 @@ function renderCareScore(){
   if(minus.length)txt+='감점: '+minus.map(i=>i[0]+' '+i[1]).join(', ');
   if(plus.length)txt+=(txt?' · ':'')+'가점: '+plus.map(i=>i[0]+' +'+i[1]).join(', ');
   document.getElementById('careScoreBreak').textContent=txt||'감점 항목 없음';
+  const sc=document.getElementById('sumCare');if(sc){const refSum=REF_PARTS.reduce((a,p,i)=>a+(parseInt((document.querySelector(`[data-ref="${i}"]`)||{}).value)||0),0);sc.textContent=`점수 ${r.score}/10 · 연관통 합 ${refSum}`;}
 }
 function careHasContent(c){if(!c)return false;const mv=c.move||{},wk=c.work||{},ex=c.exercise||{},sl=c.sleep||{},dl=c.daily||{};
   return !!(mv.drive||mv.bus||mv.subway||mv.taxi||wk.monitor||wk.meeting||wk.missedBreaks||ex.walk||ex.treadmill||ex.bad||
@@ -862,7 +898,18 @@ function careText(c){if(!careHasContent(c))return "";const mv=c.move||{},wk=c.wo
   if(day.length)lines.push("    일상: "+day.join(", "));
   if(c.sneeze)lines.push("    기침/재채기 찌릿: "+c.sneeze+"회");
   return "  〔척추위생〕\n"+lines.join("\n")+"\n";}
-function refreshTrend(){drawCharts();renderDateStrip();renderDetail();}
+function updateColSummaries(){
+  const pl=spotsState.left.length,pr=spotsState.right.length,ptot=pl+pr;
+  let peak=0;[...spotsState.left,...spotsState.right].forEach(s=>{Object.values(tpData).forEach(tp=>{const v=(tp||{})[s.id];if(v>peak)peak=v;});});
+  const e=gather();const farL=farRankForDay(e,'left'),farR=farRankForDay(e,'right');const far=Math.max(farL,farR);
+  const sp=document.getElementById('sumPain');
+  if(sp)sp.textContent=ptot? `부위 ${ptot}곳 · 최대 ${peak} · 최원위 ${RANK_LABEL[far]||"—"}` : "증상 입력 없음";
+  const cs=computeCareScore(gatherCare());
+  const refSum=REF_PARTS.reduce((a,p,i)=>a+(parseInt((document.querySelector(`[data-ref="${i}"]`)||{}).value)||0),0);
+  const sc=document.getElementById('sumCare');
+  if(sc)sc.textContent=`점수 ${cs.score}/10 · 연관통 합 ${refSum}`;
+}
+function refreshTrend(){drawCharts();renderDateStrip();renderDetail();updateColSummaries();}
 function buildExport(){const dates=sortedDates();let t="■ 경추 증상 기록 요약\n";
   t+="생성: "+new Date().toLocaleString('ko-KR')+"\n기록 일수: "+dates.length+"일\n────────────────────────\n\n";
   if(dates.length===0){t+="기록이 없습니다.";document.getElementById('exportText').value=t;return;}
@@ -894,6 +941,7 @@ function restore(file){const fr=new FileReader();fr.onload=async()=>{
   }catch(e){alert("파일을 읽을 수 없습니다. 이 앱에서 내보낸 JSON 백업 파일인지 확인해 주세요.");}};fr.readAsText(file);}
 
 async function init(){buildReferred();bindFlags();ensureTp();
+  document.getElementById('verBadge').textContent="v"+APP_VERSION;
   document.getElementById('entryDate').value=todayStr();
   document.getElementById('entryDate').onchange=()=>{loadDate();selectedDate=document.getElementById('entryDate').value;refreshTrend();};
   document.getElementById('saveBtn').onclick=manualSave;
