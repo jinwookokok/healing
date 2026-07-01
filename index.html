@@ -307,7 +307,7 @@
         <div class="card">
           <h2 style="margin:0 0 8px">증상 강도 추세 <span style="font-weight:400;color:var(--faint);font-size:12px">· 손별 합계</span></h2>
           <div class="viewtabs" id="tpView">
-            <button data-v="total" class="on">하루</button><button data-v="morning">기상직후</button><button data-v="forenoon">오전</button><button data-v="afternoon">오후</button><button data-v="night">자기전</button>
+            <button data-v="total" class="on">하루</button><button data-v="morning">기상직후</button><button data-v="am2">아침</button><button data-v="forenoon">오전중</button><button data-v="afternoon">낮</button><button data-v="evening">오후·밤</button><button data-v="night">취침전</button>
           </div>
           <p class="hint">선택한 시점의 손별 강도 합계. 왼손=실선, 오른손=점선.</p>
           <div class="legend"><span><i style="background:#C2622F"></i>왼손(실선)</span><span><i style="background:#3B6EA5;border-top:2px dashed #3B6EA5;height:0;width:18px"></i>오른손(점선)</span><span><i style="background:#C2622F;border-radius:50%;width:8px;height:8px"></i>기침·재채기 방사통</span></div>
@@ -316,7 +316,7 @@
         <div class="card">
           <h2 style="margin:0 0 8px">증상 범위 추세 <span style="font-weight:400;color:var(--faint);font-size:12px">· 부위 개수</span></h2>
           <div class="viewtabs" id="rangeView">
-            <button data-v="total" class="on">하루</button><button data-v="morning">기상직후</button><button data-v="forenoon">오전</button><button data-v="afternoon">오후</button><button data-v="night">자기전</button>
+            <button data-v="total" class="on">하루</button><button data-v="morning">기상직후</button><button data-v="am2">아침</button><button data-v="forenoon">오전중</button><button data-v="afternoon">낮</button><button data-v="evening">오후·밤</button><button data-v="night">취침전</button>
           </div>
           <p class="hint">선택한 시점에 증상이 있는 부위 개수. <b>올라가면 범위 확대</b>, <b>내려가면 좁아짐</b>.</p>
           <div class="legend"><span><i style="background:#C2622F"></i>왼손(실선)</span><span><i style="background:#3B6EA5;border-top:2px dashed #3B6EA5;height:0;width:18px"></i>오른손(점선)</span><span><i style="background:#C2622F;border-radius:50%;width:8px;height:8px"></i>기침·재채기 방사통</span></div>
@@ -550,8 +550,7 @@
       </div><!-- /recordarea -->
 
       <div class="save">
-        <button class="btn" id="saveBtn">지금 저장 (수동 확인)</button>
-        <span class="auto" id="autoState" style="font-size:12px;color:var(--faint)">자동 저장</span>
+        <span class="auto" id="autoState" style="font-size:13px;color:var(--good);font-weight:600">✓ 자동 저장 켜짐 — 입력하는 즉시 저장됩니다</span>
         <div class="saved-note" id="savedNote"></div>
         <div class="storewarn" id="storeWarn">브라우저 자동 저장이 안 되는 환경입니다. 기록이 사라지지 않도록 아래 <b>JSON 백업</b>을 사용하세요.</div>
       </div>
@@ -585,7 +584,7 @@
 </div>
 
 <script>
-const APP_VERSION="2.4";
+const APP_VERSION="2.5";
 const LOCS=[
   {n:"목",r:1},{n:"어깨",r:2},{n:"위팔",r:3},{n:"팔꿈치",r:4},{n:"아래팔",r:5},
   {n:"손목",r:6},{n:"손등",r:7},{n:"손바닥",r:7},{n:"손날(척골측)",r:7},
@@ -951,7 +950,8 @@ function scheduleAutosave(){clearTimeout(saveTimer);saveTimer=setTimeout(doAutos
 async function doAutosave(){const e=gather();if(!e.date)return;
   if(hasContent(e))LOG[e.date]=e;else delete LOG[e.date];
   const ok=await persist();const a=document.getElementById('autoState');
-  a.textContent=ok?"자동 저장됨 ✓":"저장 안 됨";a.style.color=ok?"var(--good)":"var(--alert)";
+  if(a){const t=new Date().toTimeString().slice(0,5);
+    a.textContent=ok?`✓ 자동 저장됨 · ${t}`:"저장 안 됨 — JSON 백업을 이용하세요";a.style.color=ok?"var(--good)":"var(--alert)";}
   selectedDate=e.date;refreshTrend();}
 async function manualSave(){const e=gather();if(!e.date){alert("날짜를 선택해 주세요.");return;}
   if(hasContent(e))LOG[e.date]=e;else delete LOG[e.date];
@@ -1164,7 +1164,6 @@ async function init(){buildReferred();bindFlags();ensureTp();
   document.getElementById('verBadge').textContent="v"+APP_VERSION;
   document.getElementById('entryDate').value=todayStr();
   document.getElementById('entryDate').onchange=()=>{loadDate();selectedDate=document.getElementById('entryDate').value;refreshTrend();};
-  document.getElementById('saveBtn').onclick=manualSave;
   document.getElementById('spAdd').onclick=addSpasm;
   document.getElementById('coughAdd').onclick=addCoughZap;
   document.getElementById('spRegion').addEventListener('keydown',e=>{if(e.key==='Enter')addSpasm();});
