@@ -213,6 +213,12 @@
   .mtable th.unfilled{color:var(--faint);font-weight:400}
   .mtable td.loccell{text-align:left;font-weight:600}
   .mtable td.unfilled{color:var(--faint);background:#FAFBFB}
+  .mtable td.vinterp{background:#FBEFDD;color:#9A5B2A}
+  .journal{min-height:340px;line-height:1.7;font-size:14px}
+  .tpdesc{font-size:12px;font-weight:600;color:var(--good);margin:2px 0 8px}
+  .interp-banner{background:#FBEFDD;border:1px solid #E7C9A0;color:#8A5322;border-radius:8px;padding:8px 11px;font-size:12px;margin-bottom:10px}
+  .tptab.interp .tpstate{color:#B5762F}
+  .srow .sval.est{background:#FBEFDD;color:#9A5B2A}
   .mtable td .qm{font-weight:400;color:var(--faint);font-size:11px}
   .mtable td.v0{color:var(--faint)}.mtable td.vp{color:var(--good);font-weight:700}
   .dsection{font-size:12.5px;color:var(--muted);margin-bottom:7px}.dsection b{color:var(--ink)}
@@ -371,9 +377,11 @@
       </div>
 
       <div class="card">
-        <h2><span class="num-tag">2</span> 시점별 강도 체크</h2>
+        <h2><span class="num-tag">2</span> 시점별 강도 체크 <span style="font-weight:400;color:var(--faint);font-size:12px">· 6시점</span></h2>
         <p class="hint">입력한 시점만 기록됩니다. 안 누른 시점은 "미입력"으로 남습니다.</p>
         <div class="tptabs" id="tpTabs"></div>
+        <div class="tpdesc" id="tpDesc"></div>
+        <div id="tpInterpBanner" class="interp-banner" style="display:none">이 시점은 과거 <b>추정값</b>입니다(앞뒤 시점의 중간값). 값을 조정하면 실제 입력으로 바뀝니다.</div>
         <div class="tptime"><span>이 시점 시각</span><input type="time" id="tpTime"><span class="micro" style="color:var(--faint)">(선택)</span></div>
         <div id="tpBody"></div>
       </div>
@@ -532,8 +540,9 @@
       </div>
 
       <div class="card">
-        <h2>메모 <span style="font-weight:400;color:var(--faint);font-size:12px">(선택)</span></h2>
-        <textarea id="memo" placeholder="오늘 특이사항, 신전 중 느낌, 통증을 키운 활동 등"></textarea>
+        <h2>하루 통찰 <span style="font-weight:400;color:var(--faint);font-size:12px">· 일기·분석용</span></h2>
+        <p class="hint">그날의 상태·컨디션·활동·떠오른 생각을 자유롭게 적어두세요. 나중에 분석의 바탕이 됩니다.</p>
+        <textarea id="memo" class="journal" placeholder="예) 아침엔 손끝 얼얼함이 덜했는데 오후 회의 뒤 다시 심해짐. 어제 무리하게 짐을 든 게 영향인 듯. 신전 자주 한 날은 확실히 저녁이 편하다…"></textarea>
       </div>
 
         </div><!-- /incol 척추위생·연관통 -->
@@ -576,7 +585,7 @@
 </div>
 
 <script>
-const APP_VERSION="2.2";
+const APP_VERSION="2.3";
 const LOCS=[
   {n:"목",r:1},{n:"어깨",r:2},{n:"위팔",r:3},{n:"팔꿈치",r:4},{n:"아래팔",r:5},
   {n:"손목",r:6},{n:"손등",r:7},{n:"손바닥",r:7},{n:"손날(척골측)",r:7},
@@ -589,7 +598,14 @@ const REF_LEVELS=["안아픔","조금불편","약간뻐근","뻐근","매우뻐�
 let refLevels=[0,0,0,0,0],refExtBase=0,ovState=[];
 function migrateRefLevel(v){v=+v||0;if(v<=0)return 0;if(v<=2)return 1;return 2;}
 function dayRefScore(e){const rx=e.refExt||{};return (rx.base||0)+((rx.events||[]).length);}
-const TPS=[{k:"morning",n:"기상직후"},{k:"forenoon",n:"오전"},{k:"afternoon",n:"오후"},{k:"night",n:"취침전"}];
+const TPS=[
+  {k:"morning",n:"기상직후",d:"기상 후 10분 내"},
+  {k:"am2",n:"아침",d:"기상 후 1~2시간"},
+  {k:"forenoon",n:"오전중",d:"12시 전"},
+  {k:"afternoon",n:"낮 일과중",d:"12시~6시"},
+  {k:"evening",n:"오후·밤",d:"6시~9시"},
+  {k:"night",n:"취침전",d:"10시경"}
+];
 const STORE_KEY="cervical-symptom-log";
 const LEGACY_KEYS=["cervical-symptom-log-v3"];
 let LOG={},selectedDate=null,storageOK=true;
@@ -695,7 +711,7 @@ async function persist(){const ok=await storeSet(STORE_KEY,JSON.stringify(LOG));
   document.getElementById('storeWarn').classList.toggle('show',!ok);scheduleDrivePush();return ok;}
 
 
-let spotsState={left:[],right:[]},tpData={},tpFreq={},tpTouched={},tpTimes={},curTp="morning";
+let spotsState={left:[],right:[]},tpData={},tpFreq={},tpTouched={},tpTimes={},tpInterp={},curTp="morning";
 let spasmState=[];
 let tpViewMode='total',rangeViewMode='total';
 let coughZaps=[];
@@ -772,26 +788,43 @@ function removeSpot(side,id){spotsState[side]=spotsState[side].filter(s=>s.id!==
   Object.values(tpData).forEach(v=>{if(v)delete v[id];});renderGrid(side);renderEditors(side);renderTp();scheduleAutosave();}
 
 function ensureTp(){TPS.forEach(t=>{if(!tpData[t.k])tpData[t.k]={};if(!tpFreq[t.k])tpFreq[t.k]={};});}
-function buildTpTabs(){const box=document.getElementById("tpTabs");box.innerHTML="";
-  TPS.forEach(t=>{const d=document.createElement("div");d.className="tptab"+(t.k===curTp?" active":"")+(tpTouched[t.k]?" filled":"");d.dataset.k=t.k;
-    d.innerHTML=`<div class="tpname">${t.n}</div><div class="tpstate">${tpTouched[t.k]?"입력됨":"미입력"}</div>`;
+function migrateTimepoints(){let any=false;
+  Object.values(LOG).forEach(e=>{if(!e.timepoints)return;const tps=e.timepoints;
+    const spots=[...((e.spots||{}).left||[]),...((e.spots||{}).right||[])];
+    const make=(aK,bK,nK)=>{if(tps[nK])return;const a=tps[aK],b=tps[bK];if(!a||!b)return;
+      const vals={};let has=false;
+      spots.forEach(s=>{const va=(a.vals||{})[s.id],vb=(b.vals||{})[s.id];
+        if(va!=null&&vb!=null){vals[s.id]=+(((+va)+(+vb))/2).toFixed(1);has=true;}});
+      if(has){tps[nK]={time:"",vals:vals,freq:{},interp:true};any=true;}};
+    make('morning','forenoon','am2');
+    make('afternoon','night','evening');
+  });return any;}function buildTpTabs(){const box=document.getElementById("tpTabs");box.innerHTML="";
+  TPS.forEach(t=>{const isI=tpTouched[t.k]&&tpInterp[t.k];
+    const d=document.createElement("div");d.className="tptab"+(t.k===curTp?" active":"")+(tpTouched[t.k]?" filled":"")+(isI?" interp":"");d.dataset.k=t.k;
+    d.innerHTML=`<div class="tpname">${t.n}</div><div class="tpstate">${tpTouched[t.k]?(isI?"추정":"입력됨"):"미입력"}</div>`;
     d.onclick=()=>{curTp=t.k;buildTpTabs();renderTp();};box.appendChild(d);});}
 function renderTp(){ensureTp();const body=document.getElementById("tpBody");
   const spots=[...spotsState.left.map(s=>({...s,side:"왼"})),...spotsState.right.map(s=>({...s,side:"오른"}))];
+  const cur=TPS.find(t=>t.k===curTp)||{};
+  const descEl=document.getElementById("tpDesc");if(descEl)descEl.textContent=cur.d?`${cur.n} · ${cur.d}`:cur.n;
+  const banner=document.getElementById("tpInterpBanner");
+  if(banner)banner.style.display=(tpTouched[curTp]&&tpInterp[curTp])?"block":"none";
   const timeEl=document.getElementById("tpTime");timeEl.value=tpTimes[curTp]||"";
   timeEl.onchange=e=>{tpTimes[curTp]=e.target.value;tpTouched[curTp]=true;buildTpTabs();scheduleAutosave();};
   if(spots.length===0){body.innerHTML='<div class="defineNote">먼저 위에서 증상 부위를 선택하세요.</div>';return;}
   body.innerHTML="";
-  spots.forEach(sp=>{const v=(tpData[curTp]&&tpData[curTp][sp.id]!=null)?tpData[curTp][sp.id]:0;
+  const isI=tpInterp[curTp];
+  spots.forEach(sp=>{const has=(tpData[curTp]&&tpData[curTp][sp.id]!=null);const v=has?tpData[curTp][sp.id]:0;
     const fr=(tpFreq[curTp]&&tpFreq[curTp][sp.id])?tpFreq[curTp][sp.id]:"지속";
     const row=document.createElement("div");row.className="srow";
     row.innerHTML=`<div class="sinfo"><div class="sloc">${sp.side} · ${sp.loc}</div><div class="smeta">${sp.quality||"성질 미정"}</div></div>
-      <input type="range" min="0" max="10" step="0.5" value="${v}"><span class="sval ${v>0?'on':''}">${v}</span>
+      <input type="range" min="0" max="10" step="0.5" value="${v}"><span class="sval ${v>0?'on':''} ${(isI&&has)?'est':''}">${v}</span>
       <select class="freqsel">${FREQS.map(f=>`<option value="${f[0]}"${f[0]===fr?' selected':''}>${f[0]}</option>`).join("")}</select>`;
     const range=row.querySelector("input"),val=row.querySelector(".sval"),fsel=row.querySelector(".freqsel");
-    range.oninput=()=>{const n=+range.value;val.textContent=n;val.classList.toggle("on",n>0);
+    range.oninput=()=>{const n=+range.value;val.textContent=n;val.classList.toggle("on",n>0);val.classList.remove("est");
       if(!tpData[curTp])tpData[curTp]={};spots.forEach(s=>{if(tpData[curTp][s.id]==null)tpData[curTp][s.id]=0;});
-      tpData[curTp][sp.id]=n;tpTouched[curTp]=true;buildTpTabs();scheduleAutosave();};
+      tpData[curTp][sp.id]=n;tpTouched[curTp]=true;tpInterp[curTp]=false;buildTpTabs();
+      if(banner)banner.style.display="none";scheduleAutosave();};
     fsel.onchange=()=>{if(!tpFreq[curTp])tpFreq[curTp]={};tpFreq[curTp][sp.id]=fsel.value;
       if(!tpData[curTp]||tpData[curTp][sp.id]==null){if(!tpData[curTp])tpData[curTp]={};tpData[curTp][sp.id]=+range.value;}
       tpTouched[curTp]=true;buildTpTabs();scheduleAutosave();};
@@ -802,7 +835,7 @@ function bindFlags(){document.querySelectorAll('#flags input').forEach(i=>i.addE
   const any=[...document.querySelectorAll('#flags input')].some(x=>x.checked);
   document.getElementById('alertBanner').classList.toggle('show',any);}));}
 
-function gather(){const tp={};TPS.forEach(t=>{if(tpTouched[t.k])tp[t.k]={time:tpTimes[t.k]||"",vals:{...(tpData[t.k]||{})},freq:{...(tpFreq[t.k]||{})}};});
+function gather(){const tp={};TPS.forEach(t=>{if(tpTouched[t.k])tp[t.k]={time:tpTimes[t.k]||"",vals:{...(tpData[t.k]||{})},freq:{...(tpFreq[t.k]||{})},interp:!!tpInterp[t.k]};});
   return{date:document.getElementById('entryDate').value,spots:{left:spotsState.left,right:spotsState.right},timepoints:tp,
     referred:[...refLevels],
     refExt:{base:refExtBase,events:ovState.map(o=>({note:o.note,parts:[...(o.parts||[])]}))},
@@ -878,8 +911,8 @@ function fillForm(e){e=e||{};
   spasmState=Array.isArray(e.spasm)?e.spasm.map(s=>({region:s.region||"",intensity:s.intensity||0,freq:s.freq||(s.count?(s.count+"회"):"가끔")})):[];renderSpasm();
   spotsState={left:((e.spots||{}).left||[]).map(s=>({id:s.id||newId(),loc:s.loc,quality:s.quality||""})),
               right:((e.spots||{}).right||[]).map(s=>({id:s.id||newId(),loc:s.loc,quality:s.quality||""}))};
-  tpData={};tpFreq={};tpTouched={};tpTimes={};ensureTp();
-  if(e.timepoints)Object.keys(e.timepoints).forEach(k=>{tpData[k]={...(e.timepoints[k].vals||{})};tpFreq[k]={...(e.timepoints[k].freq||{})};tpTouched[k]=true;tpTimes[k]=e.timepoints[k].time||"";});
+  tpData={};tpFreq={};tpTouched={};tpTimes={};tpInterp={};ensureTp();
+  if(e.timepoints)Object.keys(e.timepoints).forEach(k=>{tpData[k]={...(e.timepoints[k].vals||{})};tpFreq[k]={...(e.timepoints[k].freq||{})};tpTouched[k]=true;tpTimes[k]=e.timepoints[k].time||"";tpInterp[k]=!!e.timepoints[k].interp;});
   curTp="morning";renderGrid("left");renderGrid("right");renderEditors("left");renderEditors("right");buildTpTabs();renderTp();
   document.querySelectorAll('#flags input').forEach(c=>{c.checked=(e.flags||[]).includes(c.value);c.closest('.flag').classList.toggle('on',c.checked);});
   document.getElementById('alertBanner').classList.toggle('show',(e.flags||[]).length>0);
@@ -1020,13 +1053,16 @@ function renderDetail(){const box=document.getElementById('detailPanel');const e
   const cs=computeCareScore(e.care);
   h+=`<div class="dsection" style="color:var(--faint);margin-bottom:12px">연관통 강도 ${dayRefScore(e)} · 척추위생 점수 <b style="color:${cs.score<=4?'var(--alert)':cs.score<=7?'var(--warn)':'var(--good)'}">${cs.score}/10</b></div>`;
   if(spots.length){h+=`<table class="mtable"><thead><tr><th>부위</th>`;
-    TPS.forEach(t=>{const entered=!!(e.timepoints||{})[t.k];h+=`<th class="${entered?'':'unfilled'}">${t.n}${entered?'':'<br><span style="font-size:10px">미입력</span>'}</th>`;});
+    TPS.forEach(t=>{const tpp=(e.timepoints||{})[t.k];const entered=!!tpp;const isI=tpp&&tpp.interp;
+      h+=`<th class="${entered?'':'unfilled'}">${t.n}${isI?'<br><span style="font-size:9px;color:#9A5B2A">추정</span>':(entered?'':'<br><span style="font-size:10px">미입력</span>')}</th>`;});
     h+=`</tr></thead><tbody>`;
     spots.forEach(sp=>{h+=`<tr><td class="loccell">${sp.side} ${sp.loc}<div class="qm">${sp.quality||"-"}</div></td>`;
       TPS.forEach(t=>{const tp=(e.timepoints||{})[t.k];if(!tp){h+=`<td class="unfilled">미입력</td>`;}
-        else{const v=(tp.vals||{})[sp.id];const vv=(v==null?0:v);const f=(tp.freq||{})[sp.id]||"지속";
-          const tag=(vv>0&&f!=="지속")?`<div style="font-size:9px;color:var(--faint)">${f}</div>`:"";
-          h+=`<td class="${vv>0?'vp':'v0'}">${vv}${tag}</td>`;}});h+=`</tr>`;});
+        else{const v=(tp.vals||{})[sp.id];
+          if(v==null){h+=`<td class="unfilled">미입력</td>`;}
+          else{const f=(tp.freq||{})[sp.id]||"지속";
+          const tag=(v>0&&f!=="지속")?`<div style="font-size:9px;color:var(--faint)">${f}</div>`:"";
+          h+=`<td class="${tp.interp?'vinterp':(v>0?'vp':'v0')}">${v}${tag}</td>`;}}});h+=`</tr>`;});
     h+=`</tbody></table>`;}else h+=`<div class="dsection">방사통 지점 입력 없음</div>`;
   h+=`<div class="dsection"><b>가장 먼 지점</b> — 왼: ${RANK_LABEL[farRankForDay(e,'left')]} / 오른: ${RANK_LABEL[farRankForDay(e,'right')]}</div>`;
   {const rl=(e.referred||[]).map((v,i)=>((v||0)>0?REF_PARTS[i]+" "+(REF_LEVELS[v]||v):null)).filter(Boolean);
@@ -1155,7 +1191,9 @@ async function init(){buildReferred();bindFlags();ensureTp();
   if(!hasWS()){try{localStorage.setItem("__t","1");localStorage.removeItem("__t");}catch(e){document.getElementById('storeWarn').classList.add('show');}}
   document.getElementById('gConnect').onclick=()=>gConnect('consent');
   document.getElementById('gDisconnect').onclick=gDisconnect;
-  await loadLog();selectedDate=todayStr();loadDate();refreshTrend();
+  await loadLog();
+  if(migrateTimepoints())await persist();
+  selectedDate=todayStr();loadDate();refreshTrend();
   // auto-reconnect to Drive if previously connected
   let wasConnected=false;try{wasConnected=localStorage.getItem("drive-connected")==="1";}catch(e){}
   if(wasConnected){
