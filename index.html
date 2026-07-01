@@ -33,10 +33,11 @@
   .trends{margin-bottom:8px}
   .trendgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start}
   @media (max-width:900px){.trendgrid{grid-template-columns:1fr}}
-  .moretrends{margin-top:4px}
-  .moretrends>summary{list-style:none;cursor:pointer;font-size:12px;font-weight:600;color:var(--good);padding:8px 2px}
+  .moretrends{margin-top:10px}
+  .moretrends>summary{list-style:none;cursor:pointer;font-size:13px;font-weight:600;color:var(--muted);padding:10px 14px;background:var(--card);border:1px solid var(--line);border-radius:10px;text-align:center;transition:.12s}
+  .moretrends>summary:hover{border-color:var(--accent);color:var(--ink)}
   .moretrends>summary::-webkit-details-marker{display:none}
-  .moretrends:not([open])>summary::after{content:" ▾"}.moretrends[open]>summary::after{content:" ▴"}
+  .moretrends:not([open])>summary::after{content:"  펼치기 ▾"}.moretrends[open]>summary::after{content:"  접기 ▴"}
   .inputsgrid{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start}
   @media (max-width:900px){.inputsgrid{grid-template-columns:1fr}}
   .incol{min-width:0}
@@ -323,30 +324,30 @@
           <div class="legend"><span><i style="background:#C2622F"></i>왼손(실선)</span><span><i style="background:#3B6EA5;border-top:2px dashed #3B6EA5;height:0;width:18px"></i>오른손(점선)</span><span><i style="background:#C2622F;border-radius:50%;width:8px;height:8px"></i>기침·재채기 방사통</span></div>
           <svg id="tpChart" viewBox="0 0 640 220"></svg>
         </div>
-        <div class="card">
-          <h2 style="margin:0 0 8px">증상 범위 추세 <span style="font-weight:400;color:var(--faint);font-size:12px">· 부위 개수</span></h2>
-          <div class="viewtabs" id="rangeView">
-            <button data-v="total" class="on">하루</button><button data-v="morning">기상직후</button><button data-v="am2">아침</button><button data-v="forenoon">오전중</button><button data-v="afternoon">낮</button><button data-v="evening">오후·밤</button><button data-v="night">취침전</button>
-          </div>
-          <p class="hint">선택한 시점에 증상이 있는 부위 개수. <b>올라가면 범위 확대</b>, <b>내려가면 좁아짐</b>.</p>
-          <div class="legend"><span><i style="background:#C2622F"></i>왼손(실선)</span><span><i style="background:#3B6EA5;border-top:2px dashed #3B6EA5;height:0;width:18px"></i>오른손(점선)</span><span><i style="background:#C2622F;border-radius:50%;width:8px;height:8px"></i>기침·재채기 방사통</span></div>
-          <svg id="rangeChart" viewBox="0 0 640 220"></svg>
-        </div>
-        <div class="card">
-          <h2>척추위생 점수 추세 <span style="font-weight:400;color:var(--faint);font-size:12px">· 10점 만점</span></h2>
-          <p class="hint">하루 활동 점수의 흐름. 선이 <b>높을수록 척추위생을 잘 지킨 날</b>입니다.</p>
-          <svg id="careScoreChart" viewBox="0 0 640 220"></svg>
-        </div>
-        <div class="card">
-          <h2>연관통 추세 <span style="font-weight:400;color:var(--faint);font-size:12px">· 아침 vs 하루</span></h2>
-          <p class="hint">아침 = 부위별 단계 합계(안아픔0·조금불편1·약간뻐근2·뻐근3·매우뻐근4). 전날 하루 강도가 다음날 아침에 어떻게 이어지는지 비교. <b>내려가면 호전</b>.</p>
-          <div class="legend"><span><i style="background:#3B6EA5"></i>아침(부위 합계)</span><span><i style="background:#C2622F;border-top:2px dashed #C2622F;height:0;width:18px"></i>하루 강도(점선)</span></div>
-          <svg id="refChart" viewBox="0 0 640 220"></svg>
-        </div>
       </div>
       <details class="moretrends">
-        <summary>추세 더보기 · 중심화(가장 먼 지점)</summary>
+        <summary>추세 더보기 · 증상 범위 · 척추위생 점수 · 연관통 · 중심화</summary>
         <div class="trendgrid" style="margin-top:12px">
+          <div class="card">
+            <h2 style="margin:0 0 8px">증상 범위 추세 <span style="font-weight:400;color:var(--faint);font-size:12px">· 부위 개수</span></h2>
+            <div class="viewtabs" id="rangeView">
+              <button data-v="total" class="on">하루</button><button data-v="morning">기상직후</button><button data-v="am2">아침</button><button data-v="forenoon">오전중</button><button data-v="afternoon">낮</button><button data-v="evening">오후·밤</button><button data-v="night">취침전</button>
+            </div>
+            <p class="hint">선택한 시점에 증상이 있는 부위 개수. <b>올라가면 범위 확대</b>, <b>내려가면 좁아짐</b>.</p>
+            <div class="legend"><span><i style="background:#C2622F"></i>왼손(실선)</span><span><i style="background:#3B6EA5;border-top:2px dashed #3B6EA5;height:0;width:18px"></i>오른손(점선)</span><span><i style="background:#C2622F;border-radius:50%;width:8px;height:8px"></i>기침·재채기 방사통</span></div>
+            <svg id="rangeChart" viewBox="0 0 640 220"></svg>
+          </div>
+          <div class="card">
+            <h2>척추위생 점수 추세 <span style="font-weight:400;color:var(--faint);font-size:12px">· 10점 만점</span></h2>
+            <p class="hint">하루 활동 점수의 흐름. 선이 <b>높을수록 척추위생을 잘 지킨 날</b>입니다.</p>
+            <svg id="careScoreChart" viewBox="0 0 640 220"></svg>
+          </div>
+          <div class="card">
+            <h2>연관통 추세 <span style="font-weight:400;color:var(--faint);font-size:12px">· 아침 vs 하루</span></h2>
+            <p class="hint">아침 = 부위별 단계 합계(안아픔0·조금불편1·약간뻐근2·뻐근3·매우뻐근4). 전날 하루 강도가 다음날 아침에 어떻게 이어지는지 비교. <b>내려가면 호전</b>.</p>
+            <div class="legend"><span><i style="background:#3B6EA5"></i>아침(부위 합계)</span><span><i style="background:#C2622F;border-top:2px dashed #C2622F;height:0;width:18px"></i>하루 강도(점선)</span></div>
+            <svg id="refChart" viewBox="0 0 640 220"></svg>
+          </div>
           <div class="card">
             <h2>중심화 추세 <span style="font-weight:400;color:var(--faint);font-size:12px">· 가장 멀리 내려온 지점</span></h2>
             <p class="hint">선이 <b>아래로</b>=중심화(호전), <b>위로</b>=말초화(주의).</p>
@@ -594,7 +595,7 @@
 </div>
 
 <script>
-const APP_VERSION="2.7";
+const APP_VERSION="2.8";
 const LOCS=[
   {n:"목",r:1},{n:"어깨",r:2},{n:"위팔",r:3},{n:"팔꿈치",r:4},{n:"아래팔",r:5},
   {n:"손목",r:6},{n:"손등",r:7},{n:"손바닥",r:7},{n:"손날(척골측)",r:7},
