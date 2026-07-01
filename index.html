@@ -41,6 +41,7 @@
   @media (max-width:900px){.inputsgrid{grid-template-columns:1fr}}
   .incol{min-width:0}
   .viewtabs{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px}
+  .minidate{width:auto;min-height:32px;padding:5px 9px;font-size:12px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);font-weight:600}
   .viewtabs button{font-size:11.5px;padding:5px 10px;border:1px solid var(--line);border-radius:999px;background:var(--card);color:var(--muted);cursor:pointer;font-weight:600}
   .viewtabs button.on{background:var(--good-soft);border-color:#BFE0D8;color:var(--good)}
   .bottompanels{margin-top:4px}
@@ -304,6 +305,15 @@
     <section class="trends">
       <div class="colhead">추세 <span class="auto">실시간 반영</span></div>
       <div class="trendgrid">
+        <div class="card">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:4px">
+            <h2 style="margin:0">하루 중 강도 변화</h2>
+            <input type="date" id="dayCurveDatePick" class="minidate">
+          </div>
+          <p class="hint">선택한 날의 6시점 강도 흐름. 아침에 높다가 움직일수록 내려가는지 볼 수 있습니다. 왼손=실선, 오른손=점선.</p>
+          <div class="legend"><span><i style="background:#C2622F"></i>왼손(실선)</span><span><i style="background:#3B6EA5;border-top:2px dashed #3B6EA5;height:0;width:18px"></i>오른손(점선)</span></div>
+          <svg id="dayCurveChart" viewBox="0 0 640 220"></svg>
+        </div>
         <div class="card">
           <h2 style="margin:0 0 8px">증상 강도 추세 <span style="font-weight:400;color:var(--faint);font-size:12px">· 손별 합계</span></h2>
           <div class="viewtabs" id="tpView">
@@ -584,7 +594,7 @@
 </div>
 
 <script>
-const APP_VERSION="2.5";
+const APP_VERSION="2.7";
 const LOCS=[
   {n:"목",r:1},{n:"어깨",r:2},{n:"위팔",r:3},{n:"팔꿈치",r:4},{n:"아래팔",r:5},
   {n:"손목",r:6},{n:"손등",r:7},{n:"손바닥",r:7},{n:"손날(척골측)",r:7},
@@ -713,7 +723,7 @@ async function persist(){const ok=await storeSet(STORE_KEY,JSON.stringify(LOG));
 
 let spotsState={left:[],right:[]},tpData={},tpFreq={},tpTouched={},tpTimes={},tpInterp={},curTp="morning";
 let spasmState=[];
-let tpViewMode='total',rangeViewMode='total';
+let tpViewMode='total',rangeViewMode='total',dayCurveDay='';
 let coughZaps=[];
 function renderCough(){const box=document.getElementById('coughList');if(!box)return;box.innerHTML="";
   if(!coughZaps.length){box.innerHTML='<div style="font-size:12px;color:var(--faint)">찌릿 방사통 없음</div>';return;}
@@ -1010,6 +1020,14 @@ function sideCountForView(e,side,view){
   const tp=(e.timepoints||{})[view];if(!tp)return null;
   const spots=((e.spots||{})[side])||[];let c=0;spots.forEach(s=>{if((tp.vals||{})[s.id]>0)c++;});return c;}
 function drawCharts(){const dts=sortedDates();
+  // 하루 중 강도 변화 (자체 날짜 선택)
+  {const day=dayCurveDay||todayStr();const e=LOG[day]||{};
+   const short=["기상","아침","오전","낮","밤","취침"];
+   let dMax=6;TPS.forEach(t=>['left','right'].forEach(sd=>{const v=dayTpSum(e,sd,t.k);if(v!=null&&v>dMax)dMax=Math.ceil(v);}));
+   lineChart('dayCurveChart',[
+     {color:'#C2622F',data:TPS.map(t=>dayTpSum(e,'left',t.k))},
+     {color:'#3B6EA5',dash:true,data:TPS.map(t=>dayTpSum(e,'right',t.k))}
+   ],dMax,false,short);}
   lineChart('farChart',[{color:'#C2622F',data:dts.map(d=>farRankForDay(LOG[d],'left'))},
     {color:'#3B6EA5',dash:true,data:dts.map(d=>farRankForDay(LOG[d],'right'))}],8,true,null);
   // 증상 강도 추세 (선택 시점) + 기침·재채기 방사통 있던 날 표시
@@ -1169,6 +1187,8 @@ async function init(){buildReferred();bindFlags();ensureTp();
   document.getElementById('spRegion').addEventListener('keydown',e=>{if(e.key==='Enter')addSpasm();});
   document.querySelectorAll('#tpView button').forEach(b=>b.onclick=()=>{tpViewMode=b.dataset.v;
     document.querySelectorAll('#tpView button').forEach(x=>x.classList.toggle('on',x===b));drawCharts();});
+  dayCurveDay=todayStr();document.getElementById('dayCurveDatePick').value=dayCurveDay;
+  document.getElementById('dayCurveDatePick').onchange=e=>{dayCurveDay=e.target.value||todayStr();drawCharts();};
   document.querySelectorAll('#rangeView button').forEach(b=>b.onclick=()=>{rangeViewMode=b.dataset.v;
     document.querySelectorAll('#rangeView button').forEach(x=>x.classList.toggle('on',x===b));drawCharts();});
   document.getElementById('today').addEventListener('input',()=>{scheduleAutosave();renderCareScore();});
