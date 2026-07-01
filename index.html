@@ -585,7 +585,7 @@
 </div>
 
 <script>
-const APP_VERSION="2.3";
+const APP_VERSION="2.4";
 const LOCS=[
   {n:"목",r:1},{n:"어깨",r:2},{n:"위팔",r:3},{n:"팔꿈치",r:4},{n:"아래팔",r:5},
   {n:"손목",r:6},{n:"손등",r:7},{n:"손바닥",r:7},{n:"손날(척골측)",r:7},
@@ -682,6 +682,7 @@ async function driveSyncOnConnect(){
     if(driveFileId)remote=await driveDownload(driveFileId);
     const merged=mergeLogs(LOG,remote||{});
     LOG=merged;
+    migrateTimepoints(); // re-fill estimated 아침/오후·밤 after merge (idempotent) so they persist
     await storeSet(STORE_KEY,JSON.stringify(LOG)); // local cache
     if(driveFileId)await driveUpdate(driveFileId,LOG); else driveFileId=await driveCreate(LOG);
     loadDate();refreshTrend();
@@ -789,15 +790,16 @@ function removeSpot(side,id){spotsState[side]=spotsState[side].filter(s=>s.id!==
 
 function ensureTp(){TPS.forEach(t=>{if(!tpData[t.k])tpData[t.k]={};if(!tpFreq[t.k])tpFreq[t.k]={};});}
 function migrateTimepoints(){let any=false;
-  Object.values(LOG).forEach(e=>{if(!e.timepoints)return;const tps=e.timepoints;
+  Object.values(LOG).forEach(e=>{if(e.tp6)return;if(!e.timepoints){e.tp6=true;any=true;return;}const tps=e.timepoints;
     const spots=[...((e.spots||{}).left||[]),...((e.spots||{}).right||[])];
     const make=(aK,bK,nK)=>{if(tps[nK])return;const a=tps[aK],b=tps[bK];if(!a||!b)return;
       const vals={};let has=false;
       spots.forEach(s=>{const va=(a.vals||{})[s.id],vb=(b.vals||{})[s.id];
         if(va!=null&&vb!=null){vals[s.id]=+(((+va)+(+vb))/2).toFixed(1);has=true;}});
-      if(has){tps[nK]={time:"",vals:vals,freq:{},interp:true};any=true;}};
+      if(has){tps[nK]={time:"",vals:vals,freq:{},interp:true};}};
     make('morning','forenoon','am2');
     make('afternoon','night','evening');
+    e.tp6=true;any=true;
   });return any;}function buildTpTabs(){const box=document.getElementById("tpTabs");box.innerHTML="";
   TPS.forEach(t=>{const isI=tpTouched[t.k]&&tpInterp[t.k];
     const d=document.createElement("div");d.className="tptab"+(t.k===curTp?" active":"")+(tpTouched[t.k]?" filled":"")+(isI?" interp":"");d.dataset.k=t.k;
@@ -840,7 +842,7 @@ function gather(){const tp={};TPS.forEach(t=>{if(tpTouched[t.k])tp[t.k]={time:tp
     referred:[...refLevels],
     refExt:{base:refExtBase,events:ovState.map(o=>({note:o.note,parts:[...(o.parts||[])]}))},
     flags:[...document.querySelectorAll('#flags input:checked')].map(c=>c.value),
-    memo:document.getElementById('memo').value.trim(),spasm:[...spasmState],care:gatherCare(),savedAt:new Date().toISOString()};}
+    memo:document.getElementById('memo').value.trim(),spasm:[...spasmState],care:gatherCare(),tp6:true,savedAt:new Date().toISOString()};}
 function num(id){const v=parseFloat(document.getElementById(id).value);return isNaN(v)?0:v;}
 let sleepLevel="";let sleepTags=[];
 function gatherCare(){return{
