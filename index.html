@@ -304,7 +304,7 @@
             <button data-v="total" class="on">하루</button><button data-v="morning">기상직후</button><button data-v="forenoon">오전</button><button data-v="afternoon">오후</button><button data-v="night">자기전</button>
           </div>
           <p class="hint">선택한 시점의 손별 강도 합계. 왼손=실선, 오른손=점선.</p>
-          <div class="legend"><span><i style="background:#C2622F"></i>왼손(실선)</span><span><i style="background:#3B6EA5;border-top:2px dashed #3B6EA5;height:0;width:18px"></i>오른손(점선)</span></div>
+          <div class="legend"><span><i style="background:#C2622F"></i>왼손(실선)</span><span><i style="background:#3B6EA5;border-top:2px dashed #3B6EA5;height:0;width:18px"></i>오른손(점선)</span><span><i style="background:#C2622F;border-radius:50%;width:8px;height:8px"></i>기침·재채기 방사통</span></div>
           <svg id="tpChart" viewBox="0 0 640 220"></svg>
         </div>
         <div class="card">
@@ -313,7 +313,7 @@
             <button data-v="total" class="on">하루</button><button data-v="morning">기상직후</button><button data-v="forenoon">오전</button><button data-v="afternoon">오후</button><button data-v="night">자기전</button>
           </div>
           <p class="hint">선택한 시점에 증상이 있는 부위 개수. <b>올라가면 범위 확대</b>, <b>내려가면 좁아짐</b>.</p>
-          <div class="legend"><span><i style="background:#C2622F"></i>왼손(실선)</span><span><i style="background:#3B6EA5;border-top:2px dashed #3B6EA5;height:0;width:18px"></i>오른손(점선)</span></div>
+          <div class="legend"><span><i style="background:#C2622F"></i>왼손(실선)</span><span><i style="background:#3B6EA5;border-top:2px dashed #3B6EA5;height:0;width:18px"></i>오른손(점선)</span><span><i style="background:#C2622F;border-radius:50%;width:8px;height:8px"></i>기침·재채기 방사통</span></div>
           <svg id="rangeChart" viewBox="0 0 640 220"></svg>
         </div>
         <div class="card">
@@ -323,8 +323,8 @@
         </div>
         <div class="card">
           <h2>연관통 추세 <span style="font-weight:400;color:var(--faint);font-size:12px">· 아침 vs 하루</span></h2>
-          <p class="hint">전날 하루 강도가 다음날 아침에 어떻게 이어지는지 비교. <b>내려가면 호전</b>.</p>
-          <div class="legend"><span><i style="background:#3B6EA5"></i>아침(최고 단계)</span><span><i style="background:#C2622F;border-top:2px dashed #C2622F;height:0;width:18px"></i>하루 강도(점선)</span></div>
+          <p class="hint">아침 = 부위별 단계 합계(안아픔0·조금불편1·약간뻐근2·뻐근3·매우뻐근4). 전날 하루 강도가 다음날 아침에 어떻게 이어지는지 비교. <b>내려가면 호전</b>.</p>
+          <div class="legend"><span><i style="background:#3B6EA5"></i>아침(부위 합계)</span><span><i style="background:#C2622F;border-top:2px dashed #C2622F;height:0;width:18px"></i>하루 강도(점선)</span></div>
           <svg id="refChart" viewBox="0 0 640 220"></svg>
         </div>
       </div>
@@ -393,6 +393,18 @@
       </div>
 
       <div class="card">
+        <h2><span class="num-tag">4</span> 기침·재채기 방사통 <span style="font-weight:400;color:var(--faint);font-size:12px">· 척추위생 점수 연동</span></h2>
+        <p class="hint">기침·재채기 횟수와, 그중 전기 오듯 찌릿했던 방사통 횟수·강도를 기록합니다. 찌릿 횟수는 척추위생 점수에 1회당 −1로 자동 반영됩니다.</p>
+        <div class="spasmrow">
+          <div class="field" style="flex:0 0 130px"><label>기침·재채기 <span class="micro">회</span></label><input type="number" id="coughTotal" min="0" placeholder="0"></div>
+          <div class="field" style="flex:0 0 130px"><label>그중 찌릿 방사통 <span class="micro">회</span></label><input type="number" id="coughZap" min="0" placeholder="0"></div>
+          <div class="field" style="flex:0 0 110px"><label>찌릿 강도</label>
+            <select id="coughInt"><option value="">—</option><option>강</option><option>중</option><option>약</option></select>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
         <h2 style="color:var(--alert)">⚠ 경고 신호 점검 <span style="font-weight:400;color:var(--faint);font-size:12px">· 하루 1번</span></h2>
         <p class="hint">신경뿌리를 넘어 <b>척수(myelopathy)</b> 문제를 시사할 수 있는 신호입니다. 하나라도 새로 생기거나 나빠지면 미루지 마세요.</p>
         <div id="flags">
@@ -412,7 +424,7 @@
           <div class="colhead">척추위생 · 연관통 <span class="colsum" id="sumCare">점수 10/10</span></div>
 
       <div class="card" id="careCard">
-        <h2><span class="num-tag">4</span> 척추위생 점수 <span style="font-weight:400;color:var(--faint);font-size:12px">· 기본 10점에서 가감</span></h2>
+        <h2><span class="num-tag">5</span> 척추위생 점수 <span style="font-weight:400;color:var(--faint);font-size:12px">· 기본 10점에서 가감</span></h2>
         <p class="hint">하루 활동을 입력하면 점수가 자동 계산됩니다. 무엇이 점수를 깎았는지 점수칸과 오른쪽 상세에서 볼 수 있습니다.</p>
 
         <div class="scoreband" id="scoreBand">
@@ -485,10 +497,8 @@
         <label class="chk"><input type="checkbox" id="hgBadEvent"> 특별히 안 좋은 이벤트가 있었다 <span class="pen">-1</span></label>
         <input type="text" id="hgBadEventNote" placeholder="상황 입력 (선택)" style="margin-top:6px">
 
-        <div class="subh">기침·재채기 방사통 <span>· 1회당 -1</span></div>
-        <div class="modegrid">
-          <span class="modeitem">전기 오듯 찌릿한 방사통 <input type="number" id="hgSneeze" min="0" placeholder="0"><span class="mu">회</span></span>
-        </div>
+        <div class="subh">기침·재채기 방사통 <span>· 찌릿 1회당 -1 · 방사통 열 4번과 연동</span></div>
+        <div id="coughMirror" style="font-size:12.5px;color:var(--muted);background:#FBFCFC;border:1px solid var(--line);border-radius:8px;padding:9px 12px">방사통 열의 "기침·재채기 방사통"에서 입력하세요.</div>
       </div>
 
       <div class="card">
@@ -561,7 +571,7 @@
 </div>
 
 <script>
-const APP_VERSION="1.9";
+const APP_VERSION="2.1";
 const LOCS=[
   {n:"목",r:1},{n:"어깨",r:2},{n:"위팔",r:3},{n:"팔꿈치",r:4},{n:"아래팔",r:5},
   {n:"손목",r:6},{n:"손등",r:7},{n:"손바닥",r:7},{n:"손날(척골측)",r:7},
@@ -795,7 +805,7 @@ function gatherCare(){return{
       minutes:sleepMinutes(),tags:[...sleepTags],level:sleepLevel},
     daily:{headDown:document.getElementById('hgHeadDown').checked,headDownMany:document.getElementById('hgHeadDownMany').checked,
       badEvent:document.getElementById('hgBadEvent').checked,badEventNote:document.getElementById('hgBadEventNote').value.trim()},
-    sneeze:num('hgSneeze')};}
+    cough:{total:num('coughTotal'),zap:num('coughZap'),intensity:document.getElementById('coughInt').value}};}
 function sleepMinutes(){const s=document.getElementById('slpSleep').value,w=document.getElementById('slpWake').value;
   if(!s||!w)return null;const [sh,sm]=s.split(':').map(Number),[wh,wm]=w.split(':').map(Number);
   let dur=(wh*60+wm)-(sh*60+sm);if(dur<=0)dur+=1440;return dur;}
@@ -822,7 +832,8 @@ function computeCareScore(c){
   if(dl.headDown){s-=1;items.push(['고개 수그림',-1]);}
   if(dl.headDownMany){s-=1;items.push(['여러 번 수그림',-1]);}
   if(dl.badEvent){s-=1;items.push(['안 좋은 이벤트'+(dl.badEventNote?'('+dl.badEventNote+')':''),-1]);}
-  if(c.sneeze){const d=-Math.round(c.sneeze);s+=d;items.push(['기침/재채기 찌릿 '+c.sneeze+'회',d]);}
+  const zap=(c.cough&&c.cough.zap)||c.sneeze||0;
+  if(zap){const d=-Math.round(zap);s+=d;items.push(['기침/재채기 찌릿 '+zap+'회',d]);}
   return{score:Math.min(10,s),raw:s,items:items};
 }
 function renderCareScore(){
@@ -836,11 +847,14 @@ function renderCareScore(){
   if(plus.length)txt+=(txt?' · ':'')+'가점: '+plus.map(i=>i[0]+' +'+i[1]).join(', ');
   document.getElementById('careScoreBreak').textContent=txt||'감점 항목 없음';
   const sc=document.getElementById('sumCare');if(sc){const rs=refExtBase+ovState.length;sc.textContent=`점수 ${r.score}/10 · 연관통 ${rs}`;}
+  const cm=document.getElementById('coughMirror');if(cm){const cg=gatherCare().cough||{};
+    if(cg.total||cg.zap)cm.textContent=`기침·재채기 ${cg.total||0}회 중 찌릿 ${cg.zap||0}회${cg.intensity?(" ("+cg.intensity+")"):""} · 점수 ${cg.zap?("−"+cg.zap):"0"}`;
+    else cm.textContent='방사통 열의 "기침·재채기 방사통"에서 입력하세요.';}
 }
 function careHasContent(c){if(!c)return false;const mv=c.move||{},wk=c.work||{},ex=c.exercise||{},sl=c.sleep||{},dl=c.daily||{};
   return !!(mv.drive||mv.bus||mv.subway||mv.taxi||wk.monitor||wk.meeting||wk.missedBreaks||ex.walk||ex.treadmill||ex.bad||
     sl.pillow||sl.sleepAt||sl.wakeAt||(sl.tags&&sl.tags.length)||sl.level||
-    dl.headDown||dl.headDownMany||dl.badEvent||c.sneeze);}
+    dl.headDown||dl.headDownMany||dl.badEvent||c.sneeze||(c.cough&&(c.cough.total||c.cough.zap)));}
 function hasContent(e){return (e.spots.left.length||e.spots.right.length||Object.keys(e.timepoints).length||
   (e.referred||[]).some(v=>v>0)||(e.refExt&&(e.refExt.base||(e.refExt.events||[]).length))||(e.flags||[]).length||e.memo||(e.spasm&&e.spasm.length)||careHasContent(e.care));}
 function fillForm(e){e=e||{};
@@ -867,7 +881,8 @@ function fillForm(e){e=e||{};
   sleepTags=Array.isArray(sl.tags)?[...sl.tags]:[];sleepLevel=sl.level||"";renderSleepChips();calcSleepTotal();
   document.getElementById('hgHeadDown').checked=!!dl.headDown;document.getElementById('hgHeadDownMany').checked=!!dl.headDownMany;
   document.getElementById('hgBadEvent').checked=!!dl.badEvent;document.getElementById('hgBadEventNote').value=dl.badEventNote||"";
-  setv('hgSneeze',c.sneeze);
+  const cg=c.cough||{zap:c.sneeze||0};
+  setv('coughTotal',cg.total);setv('coughZap',cg.zap);document.getElementById('coughInt').value=cg.intensity||"";
   renderCareScore();}
 function clearForm(){fillForm({});}
 function todayStr(){const d=new Date();d.setMinutes(d.getMinutes()-d.getTimezoneOffset());return d.toISOString().slice(0,10);}
@@ -900,7 +915,7 @@ function farRankForDay(e,side){const spots=((e.spots||{})[side])||[];if(!spots.l
 function dayPeak(e,side){const spots=((e.spots||{})[side])||[];let p=0;
   spots.forEach(s=>Object.values(e.timepoints||{}).forEach(tp=>{const v=(tp.vals||{})[s.id];if(v>p)p=v;}));return p;}
 
-function lineChart(svgId,series,yMax,rankLabels,xLabels,yMin){
+function lineChart(svgId,series,yMax,rankLabels,xLabels,yMin,eventFlags){
   yMin=yMin||0;
   const svg=document.getElementById(svgId);const vb=svg.getAttribute('viewBox').split(' ');const W=+vb[2],H=+vb[3];
   const padL=44,padR=16,padT=14,padB=26;svg.innerHTML="";
@@ -913,6 +928,9 @@ function lineChart(svgId,series,yMax,rankLabels,xLabels,yMin){
   for(let k=yMin;k<=yMax;k+=step){const yy=y(k);g+=`<line x1="${padL}" y1="${yy}" x2="${W-padR}" y2="${yy}" stroke="${k===0&&yMin<0?'#D8DEDC':'#EEF1F0'}"/>`;
     g+=`<text x="${padL-7}" y="${yy+4}" text-anchor="end" fill="#A7B2AE" font-size="11">${rankLabels?(RANK_LABEL[k]||k):k}</text>`;}
   svg.insertAdjacentHTML('beforeend',g);
+  if(eventFlags){eventFlags.forEach((f,i)=>{if(f){const px=x(i);
+    svg.insertAdjacentHTML('beforeend',`<line x1="${px}" y1="${padT}" x2="${px}" y2="${H-padB}" stroke="#C2622F" stroke-width="1" stroke-dasharray="2 3" opacity="0.45"/>`);
+    svg.insertAdjacentHTML('beforeend',`<circle cx="${px}" cy="${H-padB}" r="3" fill="#C2622F"/>`);}});}
   series.forEach(s=>{let pts=[],d="";s.data.forEach((v,i)=>{if(v==null)return;const px=x(i),py=y(v);
     pts.push(`<circle cx="${px}" cy="${py}" r="3.4" fill="${s.color}"/>`);d+=(d?"L":"M")+px+" "+py+" ";});
     const dash=s.dash?` stroke-dasharray="5 4"`:"";
@@ -941,26 +959,28 @@ function sideCountForView(e,side,view){
 function drawCharts(){const dts=sortedDates();
   lineChart('farChart',[{color:'#C2622F',data:dts.map(d=>farRankForDay(LOG[d],'left'))},
     {color:'#3B6EA5',dash:true,data:dts.map(d=>farRankForDay(LOG[d],'right'))}],8,true,null);
-  // 증상 강도 추세 (선택 시점)
+  // 증상 강도 추세 (선택 시점) + 기침·재채기 방사통 있던 날 표시
   const tv=tpViewMode;
+  const coughDay=e=>{const cg=(e&&e.care&&e.care.cough)||{};return (cg.zap||0)>0;};
+  const evFlags=dts.map(d=>coughDay(LOG[d]));
   let tpMax=6;dts.forEach(d=>['left','right'].forEach(sd=>{const v=sideSumForView(LOG[d],sd,tv);if(v!=null&&v>tpMax)tpMax=Math.ceil(v);}));
   lineChart('tpChart',[
     {color:'#C2622F',data:dts.map(d=>sideSumForView(LOG[d],'left',tv))},
     {color:'#3B6EA5',dash:true,data:dts.map(d=>sideSumForView(LOG[d],'right',tv))}
-  ],tpMax,false,null);
+  ],tpMax,false,null,null,evFlags);
   // 증상 범위 추세 (선택 시점)
   const rv=rangeViewMode;
   let cntMax=4;dts.forEach(d=>['left','right'].forEach(sd=>{const c=sideCountForView(LOG[d],sd,rv);if(c!=null&&c>cntMax)cntMax=c;}));
   lineChart('rangeChart',[
     {color:'#C2622F',data:dts.map(d=>sideCountForView(LOG[d],'left',rv))},
     {color:'#3B6EA5',dash:true,data:dts.map(d=>sideCountForView(LOG[d],'right',rv))}
-  ],cntMax,false,null);
+  ],cntMax,false,null,null,evFlags);
   // 척추위생 점수
   const scores=dts.map(d=>computeCareScore((LOG[d]||{}).care).score);
   let sMin=0;scores.forEach(v=>{if(v<sMin)sMin=v;});sMin=Math.floor(sMin);
   lineChart('careScoreChart',[{color:'#2F8F7E',data:scores}],10,false,null,sMin);
-  // 연관통 추세: 아침(최고 단계) vs 하루 강도
-  const dayMorningRef=e=>Math.max(0,...((e.referred||[0]).map(v=>+v||0)));
+  // 연관통 추세: 아침(부위 합계) vs 하루 강도
+  const dayMorningRef=e=>(e.referred||[]).reduce((a,v)=>a+(+v||0),0);
   let refMax=4;dts.forEach(d=>{const a=dayMorningRef(LOG[d]||{}),b=dayRefScore(LOG[d]||{});refMax=Math.max(refMax,a,b);});
   lineChart('refChart',[
     {color:'#3B6EA5',data:dts.map(d=>dayMorningRef(LOG[d]||{}))},
@@ -1017,7 +1037,7 @@ function careDetailHtml(c){if(!careHasContent(c))return "";
   if(sb.length)parts.push(`<b>수면</b> ${sb.join(" · ")}`);
   const day=[];if(dl.headDown)day.push("고개 수그림");if(dl.headDownMany)day.push("여러 번");if(dl.badEvent)day.push("안 좋은 이벤트"+(dl.badEventNote?("("+dl.badEventNote.replace(/</g,'&lt;')+")"):""));
   if(day.length)parts.push(`<b>일상</b> ${day.join(", ")}`);
-  if(c.sneeze)parts.push(`<b>기침/재채기 찌릿</b> ${c.sneeze}회`);
+  {const cg=c.cough||{zap:c.sneeze};if(cg&&(cg.total||cg.zap))parts.push(`<b>기침/재채기</b> ${cg.total||0}회 중 찌릿 ${cg.zap||0}회${cg.intensity?("("+cg.intensity+")"):""}`);}
   const cs=computeCareScore(c);
   let head=`<div class="dsection" style="margin-top:10px;padding-top:10px;border-top:1px solid var(--line-soft)"><b style="color:var(--good)">척추위생 점수 ${cs.score}/10</b>`;
   if(cs.items.length)head+=` <span style="color:var(--faint);font-size:11.5px">(${cs.items.map(i=>i[0]+' '+(i[1]>0?'+':'')+i[1]).join(', ')})</span>`;
@@ -1037,7 +1057,7 @@ function careText(c){if(!careHasContent(c))return "";const mv=c.move||{},wk=c.wo
   if(sb.length)lines.push("    수면: "+sb.join(" · "));
   const day=[];if(dl.headDown)day.push("고개 수그림");if(dl.headDownMany)day.push("여러 번");if(dl.badEvent)day.push("안 좋은 이벤트"+(dl.badEventNote?("("+dl.badEventNote+")"):""));
   if(day.length)lines.push("    일상: "+day.join(", "));
-  if(c.sneeze)lines.push("    기침/재채기 찌릿: "+c.sneeze+"회");
+  {const cg=c.cough||{zap:c.sneeze};if(cg&&(cg.total||cg.zap))lines.push("    기침/재채기: "+(cg.total||0)+"회 중 찌릿 "+(cg.zap||0)+"회"+(cg.intensity?("("+cg.intensity+")"):""));}
   return "  〔척추위생〕\n"+lines.join("\n")+"\n";}
 function updateColSummaries(){
   const pl=spotsState.left.length,pr=spotsState.right.length,ptot=pl+pr;
