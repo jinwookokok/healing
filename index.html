@@ -20,6 +20,26 @@
   body{line-height:1.6;padding:0 18px 90px;font-size:15px}
   .wrap{max-width:1340px;margin:0 auto;position:relative}
   .verbadge{position:fixed;top:8px;right:10px;background:var(--ink);color:#fff;font-size:10px;font-weight:600;padding:2px 8px;border-radius:999px;opacity:.45;z-index:60;pointer-events:none;letter-spacing:.02em}
+  .printreport{display:none}
+  .prt-h1{font-size:20px;font-weight:800;margin:0 0 2px}
+  .prt-sub{font-size:12px;color:#555;margin-bottom:14px}
+  .prt-sec{font-size:13px;font-weight:800;margin:16px 0 8px;padding-bottom:4px;border-bottom:2px solid #2F8F7E}
+  .prt-charts{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .prt-chart{border:1px solid #ddd;border-radius:8px;padding:8px}
+  .prt-chart h4{font-size:11px;margin:0 0 4px;color:#333}
+  .prt-chart svg{width:100%;height:150px}
+  table.prt-table{width:100%;border-collapse:collapse;font-size:10px}
+  table.prt-table th,table.prt-table td{border:1px solid #ccc;padding:3px 5px;text-align:center}
+  table.prt-table th{background:#EEF2F1;font-weight:700}
+  table.prt-table td.l{text-align:left}
+  @media print{
+    @page{size:A4;margin:12mm}
+    body{padding:0;background:#fff}
+    body.printing .wrap>*{display:none !important}
+    body.printing #printReport{display:block !important}
+    .verbadge{display:none !important}
+    .prt-charts{page-break-inside:avoid}
+  }
   header{padding:24px 0 12px}
   .kicker{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);font-weight:600}
   h1{font-size:25px;font-weight:700;letter-spacing:-.01em;margin-top:6px}
@@ -593,6 +613,11 @@
               <button class="btn ghost" id="refreshExport">진료용 요약 만들기</button>
               <button class="btn ghost" id="copyBtn">요약 복사</button>
             </div>
+            <div class="toolrow">
+              <button class="btn ghost" id="csvBtn">구글 시트용 CSV 내보내기</button>
+              <button class="btn ghost" id="printBtn">A4 리포트 인쇄 / PDF</button>
+            </div>
+            <div style="font-size:11.5px;color:var(--faint);margin:2px 0 8px">CSV는 구글 시트에서 <b>파일 → 가져오기</b>로 열면 표가 됩니다. 인쇄는 브라우저 인쇄창에서 <b>용지 A4</b>, 대상 <b>PDF로 저장</b>을 고르면 파일로도 남길 수 있습니다.</div>
             <textarea class="export-area" id="exportText" readonly placeholder="‘진료용 요약 만들기’를 누르면 전체 기록이 텍스트로 정리됩니다."></textarea>
           </div>
         </details>
@@ -600,10 +625,12 @@
     </div>
 
   </div>
+
+  <div id="printReport" class="printreport"></div>
 </div>
 
 <script>
-const APP_VERSION="3.1";
+const APP_VERSION="3.2";
 const LOCS=[
   {n:"목",r:1},{n:"어깨",r:2},{n:"위팔",r:3},{n:"팔꿈치",r:4},{n:"아래팔",r:5},
   {n:"손목",r:6},{n:"손등",r:7},{n:"손바닥",r:7},{n:"손날(척골측)",r:7},
@@ -1230,6 +1257,38 @@ function buildExport(){const dates=sortedDates();let t="■ 경추 증상 기록
     if((e.flags||[]).length)t+=`  ⚠ 경고: ${e.flags.join(", ")}\n`;if(e.memo)t+=`  메모: ${e.memo}\n`;t+=careText(e.care);});
   document.getElementById('exportText').value=t;}
 
+function csvEsc(v){v=(v==null?"":String(v));return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;}
+function morningRefSum(e){return (e.referred||[]).reduce((a,v)=>a+(+v||0),0);}
+function exportCSV(){const dts=sortedDates();
+  const head=["날짜","요일","왼손 가장먼지점","오른손 가장먼지점","왼손 강도합","오른손 강도합","왼손 부위수","오른손 부위수","아침 연관통합","하루 연관통강도","척추위생점수","기침찌릿횟수","날씨","최고기온","최저기온","강수mm","습도%","기압hPa","하루 통찰"];
+  const rows=[head];const wdn=["일","월","화","수","목","금","토"];
+  dts.forEach(d=>{const e=LOG[d]||{};const w=e.weather||{};const zap=((e.care&&e.care.cough&&e.care.cough.zaps)||[]).length;
+    const ls=sideSumForView(e,'left','total'),rs=sideSumForView(e,'right','total');
+    rows.push([d,wdn[new Date(d+"T00:00:00").getDay()],
+      RANK_LABEL[farRankForDay(e,'left')]||"",RANK_LABEL[farRankForDay(e,'right')]||"",
+      ls==null?"":ls,rs==null?"":rs,dayActiveCount(e,'left'),dayActiveCount(e,'right'),
+      morningRefSum(e),dayRefScore(e),computeCareScore(e.care).score,zap,
+      w.code!=null?wxSummary(w.code)[1]:"",w.tmax!=null?Math.round(w.tmax):"",w.tmin!=null?Math.round(w.tmin):"",
+      w.precip==null?"":w.precip,w.humidity==null?"":w.humidity,w.pressure==null?"":w.pressure,
+      (e.memo||"").replace(/\r?\n/g," ")]);});
+  const csv="\ufeff"+rows.map(r=>r.map(csvEsc).join(",")).join("\r\n");
+  const blob=new Blob([csv],{type:"text/csv;charset=utf-8"});
+  const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=`경추기록-${todayStr()}.csv`;document.body.appendChild(a);a.click();a.remove();}
+function printReport(){const dts=sortedDates();const box=document.getElementById('printReport');const wdn=["일","월","화","수","목","금","토"];
+  const range=dts.length?`${dts[0]} ~ ${dts[dts.length-1]} · ${dts.length}일`:"기록 없음";
+  let h=`<div class="prt-h1">경추 증상 기록 리포트</div><div class="prt-sub">${range} · 안양/경기 · 출력일 ${todayStr()}</div>`;
+  h+=`<div class="prt-sub" style="color:#777">이 기록은 진단이 아니라 추적·소통용입니다. 최종 판단은 MRI를 직접 본 의료진이 합니다.</div>`;
+  h+=`<div class="prt-sec">추세 그래프</div><div class="prt-charts">`;
+  [["tpChart","증상 강도 추세"],["rangeChart","증상 범위 추세"],["refChart","연관통 추세(아침 vs 하루)"],["farChart","중심화 추세"],["careScoreChart","척추위생 점수 추세"],["dayCurveChart","하루 중 강도 변화(선택일)"]].forEach(c=>{
+    const svg=document.getElementById(c[0]);if(svg)h+=`<div class="prt-chart"><h4>${c[1]}</h4>${svg.outerHTML}</div>`;});
+  h+=`</div>`;
+  h+=`<div class="prt-sec">일자별 요약</div><table class="prt-table"><thead><tr><th>날짜</th><th>요일</th><th>왼 먼지점</th><th>오 먼지점</th><th>왼 강도</th><th>오 강도</th><th>왼 부위</th><th>오 부위</th><th>아침연관</th><th>하루연관</th><th>위생</th><th>날씨</th></tr></thead><tbody>`;
+  dts.slice().reverse().forEach(d=>{const e=LOG[d]||{};const w=e.weather||{};const ls=sideSumForView(e,'left','total'),rs=sideSumForView(e,'right','total');
+    h+=`<tr><td>${d.slice(5)}</td><td>${wdn[new Date(d+"T00:00:00").getDay()]}</td><td>${RANK_LABEL[farRankForDay(e,'left')]||"-"}</td><td>${RANK_LABEL[farRankForDay(e,'right')]||"-"}</td><td>${ls==null?"-":ls}</td><td>${rs==null?"-":rs}</td><td>${dayActiveCount(e,'left')}</td><td>${dayActiveCount(e,'right')}</td><td>${morningRefSum(e)}</td><td>${dayRefScore(e)}</td><td>${computeCareScore(e.care).score}</td><td>${w.code!=null?wxSummary(w.code)[1]:"-"}</td></tr>`;});
+  h+=`</tbody></table><div class="prt-sub" style="margin-top:8px;color:#888">강도=하루 6시점 합계 · 부위=증상 지점 개수 · 아침연관=부위 단계 합(0~20) · 하루연관=신전 유지 강도+무리 이벤트 · 위생=척추위생 점수(10점)</div>`;
+  box.innerHTML=h;document.body.classList.add('printing');
+  window.onafterprint=()=>document.body.classList.remove('printing');
+  window.print();setTimeout(()=>document.body.classList.remove('printing'),800);}
 function backup(){const blob=new Blob([JSON.stringify({app:"cervical-symptom-log",version:6,exportedAt:new Date().toISOString(),data:LOG},null,2)],{type:"application/json"});
   const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=`경추증상기록-백업-${todayStr()}.json`;document.body.appendChild(a);a.click();a.remove();}
 function restore(file){const fr=new FileReader();fr.onload=async()=>{
@@ -1267,6 +1326,8 @@ async function init(){buildReferred();bindFlags();ensureTp();
   document.getElementById('copyBtn').onclick=()=>{const ta=document.getElementById('exportText');if(!ta.value)buildExport();ta.select();
     navigator.clipboard.writeText(ta.value).then(()=>{document.getElementById('copyBtn').textContent="복사됨 ✓";setTimeout(()=>document.getElementById('copyBtn').textContent="요약 복사",1800);});};
   document.getElementById('refreshExport').onclick=buildExport;
+  document.getElementById('csvBtn').onclick=exportCSV;
+  document.getElementById('printBtn').onclick=printReport;
   document.getElementById('backupBtn').onclick=backup;
   document.getElementById('restoreBtn').onclick=()=>document.getElementById('restoreInput').click();
   document.getElementById('restoreInput').onchange=e=>{if(e.target.files[0])restore(e.target.files[0]);e.target.value="";};
