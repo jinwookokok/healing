@@ -650,7 +650,7 @@
 </div>
 
 <script>
-const APP_VERSION="3.3";
+const APP_VERSION="3.4";
 const LOCS=[
   {n:"목",r:1},{n:"어깨",r:2},{n:"위팔",r:3},{n:"팔꿈치",r:4},{n:"아래팔",r:5},
   {n:"손목",r:6},{n:"손등",r:7},{n:"손바닥",r:7},{n:"손날(척골측)",r:7},
@@ -662,6 +662,13 @@ const REF_PARTS=["목","어깨","승모근","견갑","윗등"];
 const REF_LEVELS=["안아픔","조금불편","약간뻐근","뻐근","매우뻐근"];
 let refLevels=[0,0,0,0,0],refExtBase=0,ovState=[];
 function migrateRefLevel(v){v=+v||0;if(v<=0)return 0;if(v<=2)return 1;return 2;}
+function loadRefLevels(e){
+  const arr=(e.referred||[]).slice(0,5).map(v=>+v||0);while(arr.length<5)arr.push(0);
+  // refv2 = 이미 5단계(0~4)로 저장된 값 → 절대 변환하지 않음
+  if(e.refv2)return arr.map(v=>Math.max(0,Math.min(4,v)));
+  // 플래그 없는 옛 기록: 0~10 척도가 확실할 때(값이 4 초과)만 1회 변환. 그 외엔 이미 단계값으로 보고 그대로 둠.
+  if(arr.some(v=>v>4))return arr.map(migrateRefLevel);
+  return arr.map(v=>Math.max(0,Math.min(4,v)));}
 function dayRefScore(e){const rx=e.refExt||{};return (rx.base||0)+((rx.events||[]).length);}
 const TPS=[
   {k:"morning",n:"기상직후",d:"기상 후 10분 내"},
@@ -946,7 +953,7 @@ async function ensureWeather(date){
 
 function gather(){const tp={};TPS.forEach(t=>{if(tpTouched[t.k])tp[t.k]={time:tpTimes[t.k]||"",vals:{...(tpData[t.k]||{})},freq:{...(tpFreq[t.k]||{})},interp:!!tpInterp[t.k]};});
   return{date:document.getElementById('entryDate').value,spots:{left:spotsState.left,right:spotsState.right},timepoints:tp,
-    referred:[...refLevels],
+    referred:[...refLevels],refv2:true,
     refExt:{base:refExtBase,events:ovState.map(o=>({note:o.note,parts:[...(o.parts||[])]}))},
     flags:[...document.querySelectorAll('#flags input:checked')].map(c=>c.value),
     memo:document.getElementById('memo').value.trim(),spasm:[...spasmState],care:gatherCare(),weather:currentWeather,tp6:true,savedAt:new Date().toISOString()};}
@@ -1052,7 +1059,7 @@ function hasContent(e){return (e.spots.left.length||e.spots.right.length||Object
   (e.referred||[]).some(v=>v>0)||(e.refExt&&(e.refExt.base||(e.refExt.events||[]).length))||(e.flags||[]).length||e.memo||(e.spasm&&e.spasm.length)||careHasContent(e.care));}
 function fillForm(e){e=e||{};
   currentWeather=e.weather||null;
-  refLevels=(e.referred||[0,0,0,0,0]).slice(0,5).map(migrateRefLevel);while(refLevels.length<5)refLevels.push(0);
+  refLevels=loadRefLevels(e);
   const rx=e.refExt||{};refExtBase=rx.base||0;ovState=Array.isArray(rx.events)?rx.events.map(o=>({note:o.note||"",parts:[...(o.parts||[])]})):[];
   renderRefLevels();renderRefExt();
   spasmState=Array.isArray(e.spasm)?e.spasm.map(s=>({region:s.region||"",intensity:s.intensity||0,freq:s.freq||(s.count?(s.count+"회"):"가끔")})):[];renderSpasm();
