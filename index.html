@@ -84,6 +84,9 @@
   .weatherbox{display:flex;flex-direction:column;align-items:flex-end;gap:2px;font-size:12px;color:var(--muted);text-align:right}
   .weatherbox .wx-main{font-size:13.5px;font-weight:700;color:var(--ink)}
   .weatherbox .wx-detail{font-size:11px;color:var(--faint)}
+  .future-banner{background:#EAF1FB;border:1px solid #BCD3F0;color:#2C4D86;border-radius:10px;padding:10px 13px;font-size:12.5px;margin-bottom:12px}
+  #today.futurelock .inputsgrid .card:not(#memoCard){opacity:.42;pointer-events:none;filter:grayscale(.3)}
+  #today.futurelock #memoCard{box-shadow:0 0 0 2px var(--good-soft)}
   .gdatebar{display:flex;align-items:center;gap:10px;background:var(--good-soft);border:1px solid #BFE0D8;border-radius:10px;padding:8px 12px}
   .gdatebar label{font-size:12.5px;font-weight:700;color:var(--good)}
   .gdatebar input[type=date]{border:1px solid var(--line);border-radius:8px;padding:6px 10px;font-size:13px;color:var(--ink);background:var(--card)}
@@ -368,6 +371,7 @@
           <span class="rh-title">📋 그날의 기록 입력</span>
           <div class="weatherbox" id="weatherBox">날씨 —</div>
         </div>
+        <div id="futureBanner" class="future-banner" style="display:none">🗓️ <b>미래 날짜입니다.</b> 그날 할 질문·행동은 아래 <b>하루 통찰</b>에 미리 적어두세요. 증상·강도 등 나머지 항목은 그날이 되면 입력할 수 있습니다.</div>
         <div class="inputsgrid">
         <div class="incol">
           <div class="colhead">방사통 · 미세 경련 <span class="colsum" id="sumPain">증상 입력 없음</span></div>
@@ -554,8 +558,8 @@
         <div class="refscore">오늘 연관통 강도 <b id="refDayScore">0</b> <span style="font-weight:400;color:var(--faint);font-size:11.5px">= 하루 강도 + 무리 이벤트 수</span></div>
       </div>
 
-      <div class="card">
-        <h2>하루 통찰 <span style="font-weight:400;color:var(--faint);font-size:12px">· 일기·분석용</span></h2>
+      <div class="card" id="memoCard">
+        <h2>하루 통찰 <span style="font-weight:400;color:var(--faint);font-size:12px">· 일기·분석용 · 미래 날짜에 미리 작성 가능</span></h2>
         <p class="hint">그날의 상태·컨디션·활동·떠오른 생각을 자유롭게 적어두세요. 나중에 분석의 바탕이 됩니다.</p>
         <textarea id="memo" class="journal" placeholder="예) 아침엔 손끝 얼얼함이 덜했는데 오후 회의 뒤 다시 심해짐. 어제 무리하게 짐을 든 게 영향인 듯. 신전 자주 한 날은 확실히 저녁이 편하다…"></textarea>
       </div>
@@ -599,7 +603,7 @@
 </div>
 
 <script>
-const APP_VERSION="2.9";
+const APP_VERSION="3.1";
 const LOCS=[
   {n:"목",r:1},{n:"어깨",r:2},{n:"위팔",r:3},{n:"팔꿈치",r:4},{n:"아래팔",r:5},
   {n:"손목",r:6},{n:"손등",r:7},{n:"손바닥",r:7},{n:"손날(척골측)",r:7},
@@ -999,9 +1003,13 @@ function todayStr(){const d=new Date();d.setMinutes(d.getMinutes()-d.getTimezone
 function setSdCurrent(){const v=document.getElementById('entryDate').value;const el=document.getElementById('sdCurrent');if(!el)return;
   if(!v){el.textContent="";return;}
   const d=new Date(v+"T00:00:00");const wd=["일","월","화","수","목","금","토"][d.getDay()];
-  const isToday=(v===todayStr());
-  el.textContent=`${v} (${wd})${isToday?" · 오늘":""}`;}
+  const isToday=(v===todayStr());const isFuture=v>todayStr();
+  el.textContent=`${v} (${wd})${isToday?" · 오늘":(isFuture?" · 예정":"")}`;}
+function applyFutureLock(dt){const future=dt>todayStr();
+  const t=document.getElementById('today');if(t)t.classList.toggle('futurelock',future);
+  const b=document.getElementById('futureBanner');if(b)b.style.display=future?'block':'none';}
 function loadDate(){const dt=document.getElementById('entryDate').value;if(LOG[dt])fillForm(LOG[dt]);else clearForm();setSdCurrent();
+  applyFutureLock(dt);
   renderWeather(currentWeather,dt===todayStr()?"오늘(예보 포함 가능)":"");ensureWeather(dt);}
 
 let saveTimer=null;
@@ -1019,7 +1027,8 @@ async function manualSave(){const e=gather();if(!e.date){alert("날짜를 선택
   else{n.textContent="브라우저 저장 실패 — JSON 백업을 이용하세요";n.style.color="var(--alert)";}
   setTimeout(()=>n.textContent="",3000);selectedDate=e.date;refreshTrend();}
 
-function sortedDates(){return Object.keys(LOG).sort();}
+function sortedDates(){const t=todayStr();return Object.keys(LOG).filter(d=>d<=t).sort();}
+function purgeFutureEntries(){const t=todayStr();let n=0;Object.keys(LOG).forEach(d=>{if(d>t){delete LOG[d];n++;}});return n;}
 function farRankForDay(e,side){const spots=((e.spots||{})[side])||[];if(!spots.length)return 0;let max=0;
   spots.forEach(s=>{const L=LOCS.find(l=>l.n===s.loc);const rank=L?L.r:0;
     let active=false;Object.values(e.timepoints||{}).forEach(tp=>{if((tp.vals||{})[s.id]>0)active=true;});
@@ -1239,7 +1248,7 @@ async function init(){buildReferred();bindFlags();ensureTp();
   document.getElementById('spRegion').addEventListener('keydown',e=>{if(e.key==='Enter')addSpasm();});
   document.querySelectorAll('#tpView button').forEach(b=>b.onclick=()=>{tpViewMode=b.dataset.v;
     document.querySelectorAll('#tpView button').forEach(x=>x.classList.toggle('on',x===b));drawCharts();});
-  dayCurveDay=todayStr();document.getElementById('dayCurveDatePick').value=dayCurveDay;
+  dayCurveDay=todayStr();document.getElementById('dayCurveDatePick').value=dayCurveDay;document.getElementById('dayCurveDatePick').max=todayStr();
   document.getElementById('dayCurveDatePick').onchange=e=>{dayCurveDay=e.target.value||todayStr();drawCharts();};
   document.querySelectorAll('#rangeView button').forEach(b=>b.onclick=()=>{rangeViewMode=b.dataset.v;
     document.querySelectorAll('#rangeView button').forEach(x=>x.classList.toggle('on',x===b));drawCharts();});
