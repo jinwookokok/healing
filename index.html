@@ -650,7 +650,7 @@
 </div>
 
 <script>
-const APP_VERSION="3.4";
+const APP_VERSION="3.5";
 const LOCS=[
   {n:"목",r:1},{n:"어깨",r:2},{n:"위팔",r:3},{n:"팔꿈치",r:4},{n:"아래팔",r:5},
   {n:"손목",r:6},{n:"손등",r:7},{n:"손바닥",r:7},{n:"손날(척골측)",r:7},
@@ -1432,6 +1432,18 @@ async function init(){buildReferred();bindFlags();ensureTp();
       else if(tries>20)clearInterval(t);
     },300);
   }
+  // ── 탭 간 데이터 충돌 방지 ──
+  let visBusy=false;
+  document.addEventListener('visibilitychange',async()=>{
+    if(document.hidden){clearTimeout(saveTimer);await doAutosave();} // 떠날 때 즉시 저장
+    else{if(visBusy)return;visBusy=true;try{await loadLog();loadDate();refreshTrend();}finally{visBusy=false;}} // 돌아올 때 최신 반영
+  });
+  window.addEventListener('storage',(ev)=>{ // 다른 탭이 저장하면
+    if(ev.key!==STORE_KEY||!ev.newValue)return;
+    try{LOG=JSON.parse(ev.newValue);}catch(e){return;}
+    if(!document.hasFocus()){loadDate();} // 이 탭을 편집 중이 아닐 때만 화면 갱신
+    refreshTrend();
+  });
 }
 init();
 </script>
