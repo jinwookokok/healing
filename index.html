@@ -81,6 +81,9 @@
   .recordarea{border-top:2px dashed var(--line);margin-top:18px;padding-top:6px}
   .recordhead{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:6px 0 12px}
   .recordhead .rh-title{font-size:13px;font-weight:800;color:var(--ink);letter-spacing:.02em}
+  .weatherbox{display:flex;flex-direction:column;align-items:flex-end;gap:2px;font-size:12px;color:var(--muted);text-align:right}
+  .weatherbox .wx-main{font-size:13.5px;font-weight:700;color:var(--ink)}
+  .weatherbox .wx-detail{font-size:11px;color:var(--faint)}
   .gdatebar{display:flex;align-items:center;gap:10px;background:var(--good-soft);border:1px solid #BFE0D8;border-radius:10px;padding:8px 12px}
   .gdatebar label{font-size:12.5px;font-weight:700;color:var(--good)}
   .gdatebar input[type=date]{border:1px solid var(--line);border-radius:8px;padding:6px 10px;font-size:13px;color:var(--ink);background:var(--card)}
@@ -363,6 +366,7 @@
       <div class="recordarea">
         <div class="recordhead">
           <span class="rh-title">📋 그날의 기록 입력</span>
+          <div class="weatherbox" id="weatherBox">날씨 —</div>
         </div>
         <div class="inputsgrid">
         <div class="incol">
@@ -595,7 +599,7 @@
 </div>
 
 <script>
-const APP_VERSION="2.8";
+const APP_VERSION="2.9";
 const LOCS=[
   {n:"목",r:1},{n:"어깨",r:2},{n:"위팔",r:3},{n:"팔꿈치",r:4},{n:"아래팔",r:5},
   {n:"손목",r:6},{n:"손등",r:7},{n:"손바닥",r:7},{n:"손날(척골측)",r:7},
@@ -847,12 +851,54 @@ function bindFlags(){document.querySelectorAll('#flags input').forEach(i=>i.addE
   const any=[...document.querySelectorAll('#flags input')].some(x=>x.checked);
   document.getElementById('alertBanner').classList.toggle('show',any);}));}
 
+/* ===== 날씨 (Open-Meteo · 키 불필요 · 안양/경기 고정) ===== */
+const WX_LAT=37.3943,WX_LON=126.9568;
+let currentWeather=null;const wxCache={};
+function wxSummary(code){const m={
+  0:["☀","맑음"],1:["🌤","대체로 맑음"],2:["⛅","부분 흐림"],3:["☁","흐림"],
+  45:["🌫","안개"],48:["🌫","짙은 안개"],
+  51:["🌦","약한 이슬비"],53:["🌦","이슬비"],55:["🌦","강한 이슬비"],
+  56:["🌧","언 이슬비"],57:["🌧","언 이슬비"],
+  61:["🌧","약한 비"],63:["🌧","비"],65:["🌧","강한 비"],
+  66:["🌧","진눈깨비"],67:["🌧","진눈깨비"],
+  71:["🌨","약한 눈"],73:["🌨","눈"],75:["🌨","강한 눈"],77:["🌨","싸락눈"],
+  80:["🌦","소나기"],81:["🌦","소나기"],82:["🌦","강한 소나기"],
+  85:["🌨","눈 소나기"],86:["🌨","강한 눈 소나기"],
+  95:["⛈","뇌우"],96:["⛈","우박 뇌우"],99:["⛈","강한 우박 뇌우"]};
+  return m[code]||["🌡","날씨"];}
+function wxAvg(a){if(!a||!a.length)return null;let s=0,c=0;a.forEach(v=>{if(v!=null){s+=v;c++;}});return c?Math.round(s/c):null;}
+async function fetchWeather(date){
+  if(wxCache[date])return wxCache[date];
+  const url=`https://api.open-meteo.com/v1/forecast?latitude=${WX_LAT}&longitude=${WX_LON}`+
+    `&daily=weathercode,temperature_2m_max,temperature_2m_min,precipitation_sum`+
+    `&hourly=relative_humidity_2m,surface_pressure&timezone=Asia%2FSeoul&start_date=${date}&end_date=${date}`;
+  const r=await fetch(url);if(!r.ok)throw new Error("wx");const d=await r.json();
+  const dl=d.daily||{},hh=d.hourly||{};
+  if(!dl.time||!dl.time.length)throw new Error("no data");
+  const w={code:(dl.weathercode||[])[0],tmax:(dl.temperature_2m_max||[])[0],tmin:(dl.temperature_2m_min||[])[0],
+    precip:(dl.precipitation_sum||[])[0],humidity:wxAvg(hh.relative_humidity_2m),pressure:wxAvg(hh.surface_pressure)};
+  wxCache[date]=w;return w;}
+function renderWeather(w,note){const box=document.getElementById('weatherBox');if(!box)return;
+  if(!w){box.textContent="날씨 —";return;}
+  const s=wxSummary(w.code);
+  const tt=(w.tmax!=null?Math.round(w.tmax)+"°":"")+(w.tmin!=null?" / "+Math.round(w.tmin)+"°":"");
+  box.innerHTML=`<span class="wx-main">${s[0]} ${s[1]} ${tt}</span>`+
+    `<span class="wx-detail">강수 ${w.precip!=null?w.precip+"mm":"-"} · 습도 ${w.humidity!=null?w.humidity+"%":"-"} · 기압 ${w.pressure!=null?w.pressure+"hPa":"-"}${note?(" · "+note):""}</span>`;}
+async function ensureWeather(date){
+  const box=document.getElementById('weatherBox');
+  if(currentWeather){renderWeather(currentWeather,date===todayStr()?"오늘(예보 포함 가능)":"");return;}
+  if(box)box.textContent="날씨 불러오는 중…";
+  try{const w=await fetchWeather(date);currentWeather=w;
+    renderWeather(w,date===todayStr()?"오늘(예보 포함 가능)":"");
+    if(LOG[date]){LOG[date].weather=w;persist();}
+  }catch(e){currentWeather=null;if(box)box.textContent="날씨 정보 없음";}}
+
 function gather(){const tp={};TPS.forEach(t=>{if(tpTouched[t.k])tp[t.k]={time:tpTimes[t.k]||"",vals:{...(tpData[t.k]||{})},freq:{...(tpFreq[t.k]||{})},interp:!!tpInterp[t.k]};});
   return{date:document.getElementById('entryDate').value,spots:{left:spotsState.left,right:spotsState.right},timepoints:tp,
     referred:[...refLevels],
     refExt:{base:refExtBase,events:ovState.map(o=>({note:o.note,parts:[...(o.parts||[])]}))},
     flags:[...document.querySelectorAll('#flags input:checked')].map(c=>c.value),
-    memo:document.getElementById('memo').value.trim(),spasm:[...spasmState],care:gatherCare(),tp6:true,savedAt:new Date().toISOString()};}
+    memo:document.getElementById('memo').value.trim(),spasm:[...spasmState],care:gatherCare(),weather:currentWeather,tp6:true,savedAt:new Date().toISOString()};}
 function num(id){const v=parseFloat(document.getElementById(id).value);return isNaN(v)?0:v;}
 let sleepLevel="";let sleepTags=[];
 function gatherCare(){return{
@@ -917,6 +963,7 @@ function careHasContent(c){if(!c)return false;const mv=c.move||{},wk=c.work||{},
 function hasContent(e){return (e.spots.left.length||e.spots.right.length||Object.keys(e.timepoints).length||
   (e.referred||[]).some(v=>v>0)||(e.refExt&&(e.refExt.base||(e.refExt.events||[]).length))||(e.flags||[]).length||e.memo||(e.spasm&&e.spasm.length)||careHasContent(e.care));}
 function fillForm(e){e=e||{};
+  currentWeather=e.weather||null;
   refLevels=(e.referred||[0,0,0,0,0]).slice(0,5).map(migrateRefLevel);while(refLevels.length<5)refLevels.push(0);
   const rx=e.refExt||{};refExtBase=rx.base||0;ovState=Array.isArray(rx.events)?rx.events.map(o=>({note:o.note||"",parts:[...(o.parts||[])]})):[];
   renderRefLevels();renderRefExt();
@@ -954,7 +1001,8 @@ function setSdCurrent(){const v=document.getElementById('entryDate').value;const
   const d=new Date(v+"T00:00:00");const wd=["일","월","화","수","목","금","토"][d.getDay()];
   const isToday=(v===todayStr());
   el.textContent=`${v} (${wd})${isToday?" · 오늘":""}`;}
-function loadDate(){const dt=document.getElementById('entryDate').value;if(LOG[dt])fillForm(LOG[dt]);else clearForm();setSdCurrent();}
+function loadDate(){const dt=document.getElementById('entryDate').value;if(LOG[dt])fillForm(LOG[dt]);else clearForm();setSdCurrent();
+  renderWeather(currentWeather,dt===todayStr()?"오늘(예보 포함 가능)":"");ensureWeather(dt);}
 
 let saveTimer=null;
 function scheduleAutosave(){clearTimeout(saveTimer);saveTimer=setTimeout(doAutosave,500);}
@@ -1073,6 +1121,8 @@ function renderDetail(){const box=document.getElementById('detailPanel');const e
   let h=`<div class="dsection" style="font-weight:700;font-size:15px;color:var(--ink);margin-bottom:2px">${selectedDate}</div>`;
   const cs=computeCareScore(e.care);
   h+=`<div class="dsection" style="color:var(--faint);margin-bottom:12px">연관통 강도 ${dayRefScore(e)} · 척추위생 점수 <b style="color:${cs.score<=4?'var(--alert)':cs.score<=7?'var(--warn)':'var(--good)'}">${cs.score}/10</b></div>`;
+  if(e.weather){const w=e.weather;const ws=wxSummary(w.code);
+    h+=`<div class="dsection"><b>날씨</b> — ${ws[0]} ${ws[1]} ${w.tmax!=null?Math.round(w.tmax)+"°":""}${w.tmin!=null?"/"+Math.round(w.tmin)+"°":""} · 강수 ${w.precip!=null?w.precip+"mm":"-"} · 습도 ${w.humidity!=null?w.humidity+"%":"-"} · 기압 ${w.pressure!=null?w.pressure+"hPa":"-"}</div>`;}
   if(spots.length){h+=`<table class="mtable"><thead><tr><th>부위</th>`;
     TPS.forEach(t=>{const tpp=(e.timepoints||{})[t.k];const entered=!!tpp;const isI=tpp&&tpp.interp;
       h+=`<th class="${entered?'':'unfilled'}">${t.n}${isI?'<br><span style="font-size:9px;color:#9A5B2A">추정</span>':(entered?'':'<br><span style="font-size:10px">미입력</span>')}</th>`;});
@@ -1158,6 +1208,7 @@ function buildExport(){const dates=sortedDates();let t="■ 경추 증상 기록
   if(flagged.length){t+="〔경고 신호가 기록된 날〕\n";flagged.forEach(d=>t+=`  ${d}: ${LOG[d].flags.join(", ")}\n`);t+="\n";}
   t+="〔일자별 상세 (시점별 강도, 미입력 표시)〕\n";
   dates.slice().reverse().forEach(d=>{const e=LOG[d];t+=`\n● ${d}  (연관통 강도 ${dayRefScore(e)}, 척추위생 ${computeCareScore(e.care).score}/10)\n`;
+    if(e.weather){const w=e.weather;const ws=wxSummary(w.code);t+=`  날씨: ${ws[1]} ${w.tmax!=null?Math.round(w.tmax)+"°":""}${w.tmin!=null?"/"+Math.round(w.tmin)+"°":""} 강수${w.precip!=null?w.precip+"mm":"-"} 습도${w.humidity!=null?w.humidity+"%":"-"} 기압${w.pressure!=null?w.pressure+"hPa":"-"}\n`;}
     ["left","right"].forEach(side=>{const label=side==="left"?"왼":"오른";const spots=((e.spots||{})[side])||[];
       if(!spots.length){t+=`  ${label}: 증상 없음\n`;return;}
       spots.forEach(s=>{const seq=TPS.map(tp=>{const t2=(e.timepoints||{})[tp.k];if(!t2)return tp.n+":미입력";
