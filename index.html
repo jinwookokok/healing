@@ -321,10 +321,12 @@
           </div>
           <div style="display:flex;gap:8px">
             <button class="btn ghost" id="gConnect" style="width:auto;padding:7px 12px;font-size:12.5px">구글 연결</button>
+            <button class="btn ghost" id="gSyncNow" style="width:auto;padding:7px 12px;font-size:12.5px;display:none">지금 동기화</button>
             <button class="btn ghost" id="gDisconnect" style="width:auto;padding:7px 12px;font-size:12.5px;display:none">연결 해제</button>
           </div>
         </div>
         <div id="syncHint" style="font-size:11px;color:var(--faint);margin-top:7px">연결하면 어느 기기에서나 같은 기록을 보게 됩니다.</div>
+        <div id="lastSync" style="font-size:11px;color:var(--faint);margin-top:3px"></div>
       </div>
     </div>
 
@@ -650,7 +652,7 @@
 </div>
 
 <script>
-const APP_VERSION="3.6";
+const APP_VERSION="3.8";
 const LOCS=[
   {n:"목",r:1},{n:"어깨",r:2},{n:"견갑",r:2},{n:"위팔",r:3},{n:"팔꿈치",r:4},{n:"아래팔",r:5},
   {n:"손목",r:6},{n:"손등",r:7},{n:"손바닥",r:7},{n:"손날(척골측)",r:7},
@@ -695,6 +697,7 @@ function setSyncUI(state,msg){
   dot.style.background=colors[state]||colors.off;st.textContent=msg;
   conn.style.display=(state==='ok')?'none':'inline-block';
   disc.style.display=(state==='ok')?'inline-block':'none';
+  const sn=document.getElementById('gSyncNow');if(sn)sn.style.display=(state==='off')?'none':'inline-block';
 }
 function initTokenClient(){
   if(gTokenClient||!(window.google&&google.accounts&&google.accounts.oauth2))return;
@@ -760,14 +763,28 @@ async function driveSyncOnConnect(){
     loadDate();refreshTrend();
   }catch(e){setSyncUI('err','구글 드라이브: 동기화 오류 — 다시 연결해 주세요');}
 }
+function markSynced(){const el=document.getElementById('lastSync');if(!el)return;
+  const d=new Date();el.textContent=`마지막 동기화 ${d.toTimeString().slice(0,5)} · 이 시각 이후 입력은 자동으로 다시 동기화됩니다`;}
+async function drivePushMerged(){ // 항상 원격을 먼저 읽어 병합한 뒤 올린다 (덮어쓰기 금지)
+  if(!driveFileId)driveFileId=await driveFindFile();
+  if(driveFileId){
+    let remote={};try{remote=await driveDownload(driveFileId);}catch(e){remote=null;}
+    if(remote&&typeof remote==='object'){
+      const merged=mergeLogs(LOG,remote);
+      const changed=JSON.stringify(merged)!==JSON.stringify(LOG);
+      LOG=merged;
+      if(changed){await storeSet(STORE_KEY,JSON.stringify(LOG));loadDate();refreshTrend();}
+    }
+    await driveUpdate(driveFileId,LOG);
+  }else driveFileId=await driveCreate(LOG);
+}
 function scheduleDrivePush(){
   if(!driveConnected)return;
   clearTimeout(drivePushTimer);
   drivePushTimer=setTimeout(async()=>{
     try{setSyncUI('busy','구글 드라이브: 저장 중…');
-      if(!driveFileId)driveFileId=await driveFindFile();
-      if(driveFileId)await driveUpdate(driveFileId,LOG); else driveFileId=await driveCreate(LOG);
-      setSyncUI('ok','구글 드라이브: 연결됨 ✓');
+      await drivePushMerged();
+      setSyncUI('ok','구글 드라이브: 연결됨 ✓');markSynced();
     }catch(e){setSyncUI('err','구글 드라이브: 저장 실패 — 다시 연결해 주세요');}
   },900);
 }
@@ -1116,11 +1133,11 @@ function loadDate(){const dt=document.getElementById('entryDate').value;if(LOG[d
   applyFutureLock(dt);
   renderWeather(currentWeather,dt===todayStr()?"오늘(예보 포함 가능)":"");ensureWeather(dt);}
 
-let saveTimer=null;
-function scheduleAutosave(){clearTimeout(saveTimer);saveTimer=setTimeout(doAutosave,500);}
+let saveTimer=null;let dirtyEdits=false;
+function scheduleAutosave(){dirtyEdits=true;clearTimeout(saveTimer);saveTimer=setTimeout(doAutosave,500);}
 async function doAutosave(){const e=gather();if(!e.date)return;
   if(hasContent(e))LOG[e.date]=e;else delete LOG[e.date];
-  const ok=await persist();const a=document.getElementById('autoState');
+  const ok=await persist();dirtyEdits=false;const a=document.getElementById('autoState');
   if(a){const t=new Date().toTimeString().slice(0,5);
     a.textContent=ok?`✓ 자동 저장됨 · ${t}`:"저장 안 됨 — JSON 백업을 이용하세요";a.style.color=ok?"var(--good)":"var(--alert)";}
   selectedDate=e.date;refreshTrend();}
@@ -1421,6 +1438,14 @@ async function init(){buildReferred();bindFlags();ensureTp();
   if(!hasWS()){try{localStorage.setItem("__t","1");localStorage.removeItem("__t");}catch(e){document.getElementById('storeWarn').classList.add('show');}}
   document.getElementById('gConnect').onclick=()=>gConnect('consent');
   document.getElementById('gDisconnect').onclick=gDisconnect;
+  document.getElementById('gSyncNow').onclick=async()=>{
+    if(!driveConnected){setSyncUI('err','구글 드라이브: 먼저 연결해 주세요');return;}
+    try{setSyncUI('busy','구글 드라이브: 동기화 중…');
+      clearTimeout(saveTimer);if(dirtyEdits)await doAutosave();
+      await drivePushMerged();
+      setSyncUI('ok','구글 드라이브: 연결됨 ✓');markSynced();
+    }catch(e){setSyncUI('err','구글 드라이브: 동기화 실패 — 다시 연결해 주세요');}
+  };
   await loadLog();
   if(migrateTimepoints())await persist();
   selectedDate=todayStr();loadDate();refreshTrend();
@@ -1435,8 +1460,16 @@ async function init(){buildReferred();bindFlags();ensureTp();
   // ── 탭 간 데이터 충돌 방지 ──
   let visBusy=false;
   document.addEventListener('visibilitychange',async()=>{
-    if(document.hidden){clearTimeout(saveTimer);await doAutosave();} // 떠날 때 즉시 저장
-    else{if(visBusy)return;visBusy=true;try{await loadLog();loadDate();refreshTrend();}finally{visBusy=false;}} // 돌아올 때 최신 반영
+    if(document.hidden){ // 이 탭에서 실제 편집한 경우에만 저장 (오래된 값이 새 시각으로 덮어쓰는 것 방지)
+      if(dirtyEdits){clearTimeout(saveTimer);await doAutosave();}
+    }else{
+      if(visBusy)return;visBusy=true;
+      try{
+        await loadLog();
+        if(driveConnected){try{await drivePushMerged();}catch(e){}} // 다른 기기 기록까지 가져와 병합
+        loadDate();refreshTrend();
+      }finally{visBusy=false;}
+    }
   });
   window.addEventListener('storage',(ev)=>{ // 다른 탭이 저장하면
     if(ev.key!==STORE_KEY||!ev.newValue)return;
