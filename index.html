@@ -347,7 +347,7 @@
               <input type="date" id="dayCurveDatePick" class="minidate">
             </div>
           </div>
-          <p class="hint">선택한 날의 6시점 강도 흐름. 왼손=실선, 오른손=점선. 미입력 구간은 앞뒤 입력값으로 추정해 잇고, <b>추정 지점은 속 빈 원(호박색)</b>으로 표시됩니다.</p>
+          <p class="hint">선택한 날의 6시점 강도 흐름. 왼손=실선, 오른손=점선. 미입력 구간은 앞뒤 입력값으로 추정해 잇고, 양 끝(기상직후·취침전)은 바로 옆 값으로 채웁니다. <b>추정 지점은 속 빈 원(호박색)</b>으로 표시됩니다.</p>
           <div class="legend"><span><i style="background:#C2622F"></i>왼손(실선)</span><span><i style="background:#3B6EA5;border-top:2px dashed #3B6EA5;height:0;width:18px"></i>오른손(점선)</span><span><i style="background:#fff;border:1.6px solid #C79A3E;border-radius:50%;width:8px;height:8px"></i>추정</span></div>
           <svg id="dayCurveChart" viewBox="0 0 640 220"></svg>
         </div>
@@ -665,7 +665,7 @@
 </div>
 
 <script>
-const APP_VERSION="4.0";
+const APP_VERSION="4.1";
 const LOCS=[
   {n:"목",r:1},{n:"어깨",r:2},{n:"견갑",r:2},{n:"위팔",r:3},{n:"팔꿈치",r:4},{n:"아래팔",r:5},
   {n:"손목",r:6},{n:"손등",r:7},{n:"손바닥",r:7},{n:"손날(척골측)",r:7},
@@ -1235,6 +1235,7 @@ function dayCurveSeries(e,side){
   if(sideNone(e,side)){const z=TPS.map(()=>0);return {filled:z,est:TPS.map(()=>false),raw:z.slice()};}
   const raw=TPS.map(t=>dayTpSum(e,side,t.k));
   const filled=raw.slice(),est=raw.map(()=>false);
+  // 가운데: 앞뒤 입력값 사이 선형 보간
   let last=-1;
   for(let i=0;i<raw.length;i++){
     if(raw[i]!=null){
@@ -1243,6 +1244,10 @@ function dayCurveSeries(e,side){
       last=i;
     }
   }
+  // 양 끝: 바로 옆 값이 있으면 그대로 복사 (없으면 미입력 유지)
+  if(filled[0]==null&&filled[1]!=null){filled[0]=filled[1];est[0]=true;} // 기상직후 ← 아침
+  const n=filled.length;
+  if(filled[n-1]==null&&filled[n-2]!=null){filled[n-1]=filled[n-2];est[n-1]=true;} // 취침전 ← 오후·밤
   return {filled,est,raw};
 }
 function sideCountForView(e,side,view){
