@@ -63,6 +63,8 @@
   .incol{min-width:0}
   .viewtabs{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px}
   .extypes{display:flex;flex-wrap:wrap;gap:6px}
+  .nonechk{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);margin-bottom:8px;cursor:pointer}
+  .nonechk input{width:14px;height:14px;accent-color:var(--good)}
   .extypes button{font-size:12px;padding:6px 11px;border:1px solid var(--line);border-radius:999px;background:var(--card);color:var(--muted);cursor:pointer}
   .extypes button.on{background:var(--good-soft);border-color:#BFE0D8;color:var(--good);font-weight:700}
   .minidate{width:auto;min-height:32px;padding:5px 9px;font-size:12px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);font-weight:600}
@@ -410,14 +412,16 @@
         <div class="arms2">
           <div class="arm" data-side="left">
             <h3>왼팔 · 왼손</h3>
+            <label class="nonechk"><input type="checkbox" id="noneLeft"> 오늘 왼손은 증상 없음</label>
             <div class="reggrid" data-grid="left"></div>
             <div class="regnote">선택한 부위는 아래에서 성질을 정하세요.</div>
             <div class="spotedit" data-edit="left"></div>
           </div>
           <div class="arm" data-side="right">
             <h3>오른팔 · 오른손</h3>
+            <label class="nonechk"><input type="checkbox" id="noneRight"> 오늘 오른손은 증상 없음</label>
             <div class="reggrid" data-grid="right"></div>
-            <div class="regnote">증상이 없으면 비워두세요.</div>
+            <div class="regnote">증상이 없으면 위 "증상 없음"을 체크하세요.</div>
             <div class="spotedit" data-edit="right"></div>
           </div>
         </div>
@@ -661,7 +665,7 @@
 </div>
 
 <script>
-const APP_VERSION="3.9";
+const APP_VERSION="4.0";
 const LOCS=[
   {n:"목",r:1},{n:"어깨",r:2},{n:"견갑",r:2},{n:"위팔",r:3},{n:"팔꿈치",r:4},{n:"아래팔",r:5},
   {n:"손목",r:6},{n:"손등",r:7},{n:"손바닥",r:7},{n:"손날(척골측)",r:7},
@@ -982,7 +986,8 @@ function gather(){const tp={};TPS.forEach(t=>{if(tpTouched[t.k])tp[t.k]={time:tp
     referred:[...refLevels],refv2:true,
     refExt:{base:refExtBase,events:ovState.map(o=>({note:o.note,parts:[...(o.parts||[])]}))},
     flags:[...document.querySelectorAll('#flags input:checked')].map(c=>c.value),
-    memo:document.getElementById('memo').value.trim(),spasm:[...spasmState],care:gatherCare(),weather:currentWeather,tp6:true,savedAt:new Date().toISOString()};}
+    memo:document.getElementById('memo').value.trim(),spasm:[...spasmState],care:gatherCare(),weather:currentWeather,
+    none:{left:document.getElementById('noneLeft').checked,right:document.getElementById('noneRight').checked},tp6:true,savedAt:new Date().toISOString()};}
 function num(id){const v=parseFloat(document.getElementById(id).value);return isNaN(v)?0:v;}
 let sleepLevel="";let sleepTags=[];
 let moveState=[],exerciseState=[],restState=[];
@@ -1095,8 +1100,12 @@ function careHasContent(c){if(!c)return false;const mv=c.move,wk=c.work||{},ex=c
     dl.headDown||dl.headDownMany||dl.badEvent||(Array.isArray(c.rest)&&c.rest.length)||
     c.sneeze||(c.cough&&(c.cough.total||(c.cough.zaps&&c.cough.zaps.length)||c.cough.zap)));}
 function hasContent(e){return (e.spots.left.length||e.spots.right.length||Object.keys(e.timepoints).length||
+  (e.none&&(e.none.left||e.none.right))||
   (e.referred||[]).some(v=>v>0)||(e.refExt&&(e.refExt.base||(e.refExt.events||[]).length))||(e.flags||[]).length||e.memo||(e.spasm&&e.spasm.length)||careHasContent(e.care));}
 function fillForm(e){e=e||{};
+  const none=e.none||{};
+  document.getElementById('noneLeft').checked=!!none.left;
+  document.getElementById('noneRight').checked=!!none.right;
   currentWeather=e.weather||null;
   refLevels=loadRefLevels(e);
   const rx=e.refExt||{};refExtBase=rx.base||0;ovState=Array.isArray(rx.events)?rx.events.map(o=>({note:o.note||"",parts:[...(o.parts||[])]})):[];
@@ -1172,7 +1181,8 @@ async function manualSave(){const e=gather();if(!e.date){alert("날짜를 선택
 
 function sortedDates(){const t=todayStr();return Object.keys(LOG).filter(d=>d<=t).sort();}
 function purgeFutureEntries(){const t=todayStr();let n=0;Object.keys(LOG).forEach(d=>{if(d>t){delete LOG[d];n++;}});return n;}
-function farRankForDay(e,side){const spots=((e.spots||{})[side])||[];if(!spots.length)return 0;let max=0;
+function sideNone(e,side){return !!(e&&e.none&&e.none[side]);}
+function farRankForDay(e,side){if(sideNone(e,side))return 0;const spots=((e.spots||{})[side])||[];if(!spots.length)return 0;let max=0;
   spots.forEach(s=>{const L=LOCS.find(l=>l.n===s.loc);const rank=L?L.r:0;
     let active=false;Object.values(e.timepoints||{}).forEach(tp=>{if((tp.vals||{})[s.id]>0)active=true;});
     if(active||!Object.keys(e.timepoints||{}).length)max=Math.max(max,rank);});return max;}
@@ -1207,10 +1217,12 @@ function lineChart(svgId,series,yMax,rankLabels,xLabels,yMin,eventFlags){
   idxs.forEach(idx=>{const lab=xLabels?xLabels[idx]:dts[idx].slice(5);svg.insertAdjacentHTML('beforeend',`<text x="${x(idx)}" y="${H-8}" text-anchor="middle" fill="#A7B2AE" font-size="11">${lab}</text>`);});}
 function dayTpSum(e,side,tpKey){
   const tp=(e.timepoints||{})[tpKey];if(!tp)return null;
+  if(sideNone(e,side))return 0;
   const spots=((e.spots||{})[side])||[];if(!spots.length)return null;
   let sum=0,any=false;spots.forEach(s=>{const v=effVal(tp,s.id);if(v!=null){sum+=v;any=true;}});
   return any?+sum.toFixed(1):null;}
 function dayActiveCount(e,side){
+  if(sideNone(e,side))return 0;
   const spots=((e.spots||{})[side])||[];if(!spots.length)return 0;
   const noTp=!Object.keys(e.timepoints||{}).length;let c=0;
   spots.forEach(s=>{let active=false;Object.values(e.timepoints||{}).forEach(tp=>{if((tp.vals||{})[s.id]>0)active=true;});
@@ -1220,6 +1232,7 @@ function sideSumForView(e,side,view){
   return dayTpSum(e,side,view);}
 // 하루 곡선용: 입력된 시점 사이의 빈 구간을 선형 보간 (앞뒤가 모두 있을 때만, 양 끝 바깥은 채우지 않음)
 function dayCurveSeries(e,side){
+  if(sideNone(e,side)){const z=TPS.map(()=>0);return {filled:z,est:TPS.map(()=>false),raw:z.slice()};}
   const raw=TPS.map(t=>dayTpSum(e,side,t.k));
   const filled=raw.slice(),est=raw.map(()=>false);
   let last=-1;
@@ -1233,6 +1246,7 @@ function dayCurveSeries(e,side){
   return {filled,est,raw};
 }
 function sideCountForView(e,side,view){
+  if(sideNone(e,side))return 0;
   if(view==='total')return dayActiveCount(e,side);
   const tp=(e.timepoints||{})[view];if(!tp)return null;
   const spots=((e.spots||{})[side])||[];let c=0;spots.forEach(s=>{if((tp.vals||{})[s.id]>0)c++;});return c;}
