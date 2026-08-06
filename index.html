@@ -64,6 +64,24 @@
   .viewtabs{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px}
   .extypes{display:flex;flex-wrap:wrap;gap:6px}
   .nonechk{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);margin-bottom:8px;cursor:pointer}
+  .modeswitch{margin-left:auto;display:flex;gap:0;background:rgba(255,255,255,.25);border-radius:9px;padding:2px}
+  .modeswitch button{border:0;background:none;color:#fff;font-size:12px;font-weight:700;padding:6px 12px;border-radius:7px;cursor:pointer;opacity:.8}
+  .modeswitch button.on{background:#fff;color:var(--good);opacity:1}
+  .tl-legend{display:flex;flex-wrap:wrap;gap:10px;font-size:11px;color:var(--muted)}
+  .tl-legend span{display:flex;align-items:center;gap:4px}
+  .tl-legend i{width:11px;height:11px;border-radius:3px;display:inline-block}
+  .tl-legend i.dot{width:9px;height:9px;border-radius:50%;background:#C2622F}
+  .tl-grid{position:relative;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--card)}
+  .tl-row{position:relative;height:38px;border-bottom:1px solid #EEF1F0;display:flex}
+  .tl-row:last-child{border-bottom:0}
+  .tl-hour{flex:0 0 52px;font-size:10.5px;color:var(--faint);padding:2px 6px;border-right:1px solid #EEF1F0;box-sizing:border-box}
+  .tl-lane{position:relative;flex:1}
+  .tl-block{position:absolute;left:2px;right:2px;border-radius:6px;color:#fff;font-size:10.5px;padding:2px 6px;box-sizing:border-box;overflow:hidden;cursor:pointer;line-height:1.25}
+  .tl-block.lane2{left:50%;right:2px}
+  .tl-block.lanehalf{left:2px;right:50%}
+  .tl-dot{position:absolute;width:11px;height:11px;border-radius:50%;transform:translate(-50%,-50%);cursor:pointer;border:1.5px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.15)}
+  .tl-detail{margin-top:10px;font-size:12.5px;color:var(--ink);min-height:20px}
+  .tl-detail .tld-card{background:#FBFCFC;border:1px solid var(--line);border-radius:8px;padding:10px 12px}
   .nonechk input{width:14px;height:14px;accent-color:var(--good)}
   .extypes button{font-size:12px;padding:6px 11px;border:1px solid var(--line);border-radius:999px;background:var(--card);color:var(--muted);cursor:pointer}
   .extypes button.on{background:var(--good-soft);border-color:#BFE0D8;color:var(--good);font-weight:700}
@@ -311,8 +329,24 @@
       <span class="sd-ico">📅</span>
       <input type="date" id="entryDate">
       <span class="sd-current" id="sdCurrent"></span>
-      <span class="sd-hint">이 날짜의 기록을 보고 있습니다</span>
+      <span class="modeswitch">
+        <button id="modeRecord" class="on">기록 보기</button><button id="modeTimeline">하루 타임라인</button>
+      </span>
     </div>
+
+    <section class="timeline-wrap" id="timelineView" style="display:none">
+      <div class="card">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:6px">
+          <h2 style="margin:0">하루 타임라인 <span id="tlDate" style="font-weight:400;color:var(--faint);font-size:12px"></span></h2>
+          <div class="tl-legend">
+            <span><i style="background:#6C8EBF"></i>수면</span><span><i style="background:#8A8F98"></i>업무</span><span><i style="background:#2F8F7E"></i>운동</span><span><i style="background:#C79A3E"></i>누워쉼</span><span><i style="background:#B07AA1"></i>이동</span><span><i class="dot"></i>방사통</span>
+          </div>
+        </div>
+        <p class="hint">선택한 날의 활동을 시간축에 표시합니다. 방사통은 그 시점에 기록한 시각 위치에 점으로 표시되며(왼손 주황·오른손 파랑), 블록·점을 누르면 상세가 뜹니다. 보기 전용입니다.</p>
+        <div class="tl-grid" id="tlGrid"></div>
+        <div class="tl-detail" id="tlDetail"></div>
+      </div>
+    </section>
 
     <div class="toprow">
       <div class="card" style="display:flex;align-items:center">
@@ -665,7 +699,7 @@
 </div>
 
 <script>
-const APP_VERSION="4.1";
+const APP_VERSION="4.2";
 const LOCS=[
   {n:"목",r:1},{n:"어깨",r:2},{n:"견갑",r:2},{n:"위팔",r:3},{n:"팔꿈치",r:4},{n:"아래팔",r:5},
   {n:"손목",r:6},{n:"손등",r:7},{n:"손바닥",r:7},{n:"손날(척골측)",r:7},
@@ -817,6 +851,62 @@ async function persist(){const ok=await storeSet(STORE_KEY,JSON.stringify(LOG));
 let spotsState={left:[],right:[]},tpData={},tpFreq={},tpTouched={},tpTimes={},tpInterp={},curTp="morning";
 let spasmState=[];
 let tpViewMode='total',rangeViewMode='total',dayCurveDay='',dayCurveInterp=true;
+let viewMode='record';
+function setViewMode(m){
+  viewMode=m;
+  document.getElementById('modeRecord').classList.toggle('on',m==='record');
+  document.getElementById('modeTimeline').classList.toggle('on',m==='timeline');
+  const tl=document.getElementById('timelineView');
+  const hide=['.trends','.toprow','#today','.bottompanels'];
+  hide.forEach(sel=>{const el=document.querySelector(sel);if(el)el.style.display=(m==='timeline')?'none':'';});
+  tl.style.display=(m==='timeline')?'block':'none';
+  if(m==='timeline')renderTimeline();
+}
+const TL_START=5,TL_ROWH=38; // 05:00 시작, 24시간 창(수면이 자정을 넘겨도 한 창에 들어오도록)
+function tlPosY(hhmm){if(!hhmm)return null;const [h,m]=hhmm.split(':').map(Number);return (((h*60+m)-TL_START*60+1440)%1440)/60*TL_ROWH;}
+function tlDur(a,b){if(!a||!b)return 0;const [ah,am]=a.split(':').map(Number),[bh,bm]=b.split(':').map(Number);let d=(bh*60+bm)-(ah*60+am);if(d<=0)d+=1440;return d;}
+function esc(s){return (s||'').replace(/</g,'&lt;');}
+function renderTimeline(){
+  const day=document.getElementById('entryDate').value;
+  const e=LOG[day]||{};
+  document.getElementById('tlDate').textContent=day?('· '+day):'';
+  document.getElementById('tlDetail').innerHTML='<span style="color:var(--faint)">블록이나 점을 누르면 상세가 표시됩니다.</span>';
+  const grid=document.getElementById('tlGrid');
+  const hours=[];for(let i=0;i<24;i++)hours.push((TL_START+i)%24);
+  let rows='';
+  hours.forEach(h=>{rows+=`<div class="tl-row"><div class="tl-hour">${String(h).padStart(2,'0')}:00</div><div class="tl-lane"></div></div>`;});
+  const totalH=24*TL_ROWH;
+  // 블록 수집
+  const blocks=[];
+  const c=e.care||{};
+  const sl=c.sleep||{};
+  if(sl.sleepAt&&sl.wakeAt)blocks.push({lane:'half',color:'#6C8EBF',start:sl.sleepAt,dur:tlDur(sl.sleepAt,sl.wakeAt),label:'수면',detail:`수면 ${sl.sleepAt}~${sl.wakeAt} · ${fmtSleep(sl.minutes)}${sl.level?(' · 질 '+sl.level):''}`});
+  const wk=c.work||{};
+  if(wk.inAt&&wk.outAt)blocks.push({lane:'half',color:'#8A8F98',start:wk.inAt,dur:tlDur(wk.inAt,wk.outAt),label:'업무',detail:`회사 체류 ${wk.inAt}~${wk.outAt} · ${fmtSleep(tlDur(wk.inAt,wk.outAt))}${wk.commute?' · 출근':''}`});
+  ((c.exercise&&Array.isArray(c.exercise.list))?c.exercise.list:[]).forEach(x=>{const ty=exTypesOf(x).join('·')||'운동';if(x.time)blocks.push({lane:'2',color:'#2F8F7E',start:x.time,dur:x.min||0,label:ty,detail:`운동 ${ty} · ${x.time} · ${x.min||0}분`});});
+  (Array.isArray(c.rest)?c.rest:[]).forEach(r=>{if(r.time)blocks.push({lane:'2',color:'#C79A3E',start:r.time,dur:r.min||0,label:'누워쉼',detail:`누워 쉼 · ${r.time} · ${r.min||0}분`});});
+  (Array.isArray(c.move)?c.move:[]).forEach(m=>{if(m.time)blocks.push({lane:'2',color:'#B07AA1',start:m.time,dur:m.min||0,label:m.mode,detail:`이동 ${m.mode} · ${m.time} · ${m.min||0}분`});});
+  // 오버레이
+  let ov='<div id="tlOverlay" style="position:absolute;left:52px;right:0;top:0;bottom:0">';
+  blocks.forEach((b,i)=>{const top=tlPosY(b.start);if(top==null)return;const h=Math.max(14,(b.dur||0)/60*TL_ROWH);
+    const cls=b.lane==='half'?'lanehalf':(b.lane==='2'?'lane2':'');
+    ov+=`<div class="tl-block ${cls}" data-b="${i}" style="top:${top}px;height:${h}px;background:${b.color}">${esc(b.label)}</div>`;});
+  // 방사통 점 (시점 시각 위치)
+  const dots=[];
+  TPS.forEach(t=>{const tp=(e.timepoints||{})[t.k];if(!tp||!tp.time)return;
+    const lv=dayTpSum(e,'left',t.k),rv=dayTpSum(e,'right',t.k);
+    if(lv!=null)dots.push({time:tp.time,side:'왼손',color:'#C2622F',xp:38,val:lv,tp:t.n});
+    if(rv!=null)dots.push({time:tp.time,side:'오른손',color:'#3B6EA5',xp:62,val:rv,tp:t.n});});
+  dots.forEach((d,i)=>{const top=tlPosY(d.time);if(top==null)return;
+    ov+=`<div class="tl-dot" data-d="${i}" style="top:${top}px;left:${d.xp}%;background:${d.color}"></div>`;});
+  ov+='</div>';
+  grid.style.height=totalH+'px';grid.style.position='relative';
+  grid.innerHTML=rows+ov;
+  // 클릭 상세
+  const detail=document.getElementById('tlDetail');
+  grid.querySelectorAll('.tl-block').forEach(el=>{el.onclick=()=>{const b=blocks[+el.dataset.b];detail.innerHTML=`<div class="tld-card">${esc(b.detail)}</div>`;};});
+  grid.querySelectorAll('.tl-dot').forEach(el=>{el.onclick=()=>{const d=dots[+el.dataset.d];detail.innerHTML=`<div class="tld-card"><b>${d.side} 방사통</b> · ${d.tp} · 기록시각 ${d.time} · 강도합 ${d.val}</div>`;};});
+}
 let coughZaps=[];
 function renderCough(){const box=document.getElementById('coughList');if(!box)return;box.innerHTML="";
   if(!coughZaps.length){box.innerHTML='<div style="font-size:12px;color:var(--faint)">찌릿 방사통 없음</div>';return;}
@@ -1390,7 +1480,7 @@ function updateColSummaries(){
   const sc=document.getElementById('sumCare');
   if(sc)sc.textContent=`점수 ${cs.score}/10 · 연관통 ${rs}`;
 }
-function refreshTrend(){drawCharts();renderDateStrip();renderDetail();updateColSummaries();}
+function refreshTrend(){drawCharts();renderDateStrip();renderDetail();updateColSummaries();if(viewMode==='timeline')renderTimeline();}
 function buildExport(){const dates=sortedDates();let t="■ 경추 증상 기록 요약\n";
   t+="생성: "+new Date().toLocaleString('ko-KR')+"\n기록 일수: "+dates.length+"일\n────────────────────────\n\n";
   if(dates.length===0){t+="기록이 없습니다.";document.getElementById('exportText').value=t;return;}
@@ -1474,6 +1564,8 @@ async function init(){buildReferred();bindFlags();ensureTp();
   document.querySelectorAll('#tpView button').forEach(b=>b.onclick=()=>{tpViewMode=b.dataset.v;
     document.querySelectorAll('#tpView button').forEach(x=>x.classList.toggle('on',x===b));drawCharts();});
   dayCurveDay=todayStr();document.getElementById('dayCurveDatePick').value=dayCurveDay;document.getElementById('dayCurveDatePick').max=todayStr();
+  document.getElementById('modeRecord').onclick=()=>setViewMode('record');
+  document.getElementById('modeTimeline').onclick=()=>setViewMode('timeline');
   document.getElementById('dayCurveDatePick').onchange=e=>{dayCurveDay=e.target.value||todayStr();drawCharts();};
   document.getElementById('dayCurveInterp').onchange=e=>{dayCurveInterp=e.target.checked;drawCharts();};
   document.querySelectorAll('#rangeView button').forEach(b=>b.onclick=()=>{rangeViewMode=b.dataset.v;
