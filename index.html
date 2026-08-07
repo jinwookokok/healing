@@ -699,7 +699,7 @@
 </div>
 
 <script>
-const APP_VERSION="4.2";
+const APP_VERSION="4.3";
 const LOCS=[
   {n:"목",r:1},{n:"어깨",r:2},{n:"견갑",r:2},{n:"위팔",r:3},{n:"팔꿈치",r:4},{n:"아래팔",r:5},
   {n:"손목",r:6},{n:"손등",r:7},{n:"손바닥",r:7},{n:"손날(척골측)",r:7},
@@ -812,15 +812,18 @@ async function driveSyncOnConnect(){
 }
 function markSynced(){const el=document.getElementById('lastSync');if(!el)return;
   const d=new Date();el.textContent=`마지막 동기화 ${d.toTimeString().slice(0,5)} · 이 시각 이후 입력은 자동으로 다시 동기화됩니다`;}
+function syncSig(log){return Object.keys(log).sort().map(k=>k+':'+((log[k]&&log[k].savedAt)||'')).join('|');}
 async function drivePushMerged(){ // 항상 원격을 먼저 읽어 병합한 뒤 올린다 (덮어쓰기 금지)
   if(!driveFileId)driveFileId=await driveFindFile();
   if(driveFileId){
-    let remote={};try{remote=await driveDownload(driveFileId);}catch(e){remote=null;}
+    let remote=null;try{remote=await driveDownload(driveFileId);}catch(e){remote=null;}
     if(remote&&typeof remote==='object'){
-      const merged=mergeLogs(LOG,remote);
-      const changed=JSON.stringify(merged)!==JSON.stringify(LOG);
-      LOG=merged;
-      if(changed){await storeSet(STORE_KEY,JSON.stringify(LOG));loadDate();refreshTrend();}
+      const before=syncSig(LOG);
+      LOG=mergeLogs(LOG,remote);
+      if(syncSig(LOG)!==before){ // 원격에 실제로 새 내용이 있을 때만 (날짜 추가/변경)
+        await storeSet(STORE_KEY,JSON.stringify(LOG));
+        drawCharts();renderDateStrip(); // 차트만 갱신 — 입력 폼/시점 탭은 건드리지 않음
+      }
     }
     await driveUpdate(driveFileId,LOG);
   }else driveFileId=await driveCreate(LOG);
