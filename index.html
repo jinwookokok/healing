@@ -375,11 +375,8 @@
       <div class="trendgrid">
         <div class="card">
           <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:4px">
-            <h2 style="margin:0">하루 중 강도 변화</h2>
-            <div style="display:flex;align-items:center;gap:10px">
-              <label style="display:flex;align-items:center;gap:4px;font-size:11.5px;color:var(--muted);cursor:pointer"><input type="checkbox" id="dayCurveInterp" checked style="width:14px;height:14px"> 미입력 추정</label>
-              <input type="date" id="dayCurveDatePick" class="minidate">
-            </div>
+            <h2 style="margin:0">하루 중 강도 변화 <span style="font-weight:400;color:var(--faint);font-size:12px">· 위에서 고른 날짜</span></h2>
+            <label style="display:flex;align-items:center;gap:4px;font-size:11.5px;color:var(--muted);cursor:pointer"><input type="checkbox" id="dayCurveInterp" checked style="width:14px;height:14px"> 미입력 추정</label>
           </div>
           <p class="hint">선택한 날의 6시점 강도 흐름. 왼손=실선, 오른손=점선. 미입력 구간은 앞뒤 입력값으로 추정해 잇고, 양 끝(기상직후·취침전)은 바로 옆 값으로 채웁니다. <b>추정 지점은 속 빈 원(호박색)</b>으로 표시됩니다.</p>
           <div class="legend"><span><i style="background:#C2622F"></i>왼손(실선)</span><span><i style="background:#3B6EA5;border-top:2px dashed #3B6EA5;height:0;width:18px"></i>오른손(점선)</span><span><i style="background:#fff;border:1.6px solid #C79A3E;border-radius:50%;width:8px;height:8px"></i>추정</span></div>
@@ -699,7 +696,7 @@
 </div>
 
 <script>
-const APP_VERSION="4.3";
+const APP_VERSION="4.4";
 const LOCS=[
   {n:"목",r:1},{n:"어깨",r:2},{n:"견갑",r:2},{n:"위팔",r:3},{n:"팔꿈치",r:4},{n:"아래팔",r:5},
   {n:"손목",r:6},{n:"손등",r:7},{n:"손바닥",r:7},{n:"손날(척골측)",r:7},
@@ -1282,7 +1279,7 @@ function farRankForDay(e,side){if(sideNone(e,side))return 0;const spots=((e.spot
 function dayPeak(e,side){const spots=((e.spots||{})[side])||[];let p=0;
   spots.forEach(s=>Object.values(e.timepoints||{}).forEach(tp=>{const v=(tp.vals||{})[s.id];if(v>p)p=v;}));return p;}
 
-function lineChart(svgId,series,yMax,rankLabels,xLabels,yMin,eventFlags){
+function lineChart(svgId,series,yMax,rankLabels,xLabels,yMin,eventFlags,markIdx){
   yMin=yMin||0;
   const svg=document.getElementById(svgId);const vb=svg.getAttribute('viewBox').split(' ');const W=+vb[2],H=+vb[3];
   const padL=44,padR=16,padT=14,padB=26;svg.innerHTML="";
@@ -1295,6 +1292,11 @@ function lineChart(svgId,series,yMax,rankLabels,xLabels,yMin,eventFlags){
   for(let k=yMin;k<=yMax;k+=step){const yy=y(k);g+=`<line x1="${padL}" y1="${yy}" x2="${W-padR}" y2="${yy}" stroke="${k===0&&yMin<0?'#D8DEDC':'#EEF1F0'}"/>`;
     g+=`<text x="${padL-7}" y="${yy+4}" text-anchor="end" fill="#A7B2AE" font-size="11">${rankLabels?(RANK_LABEL[k]||k):k}</text>`;}
   svg.insertAdjacentHTML('beforeend',g);
+  // 선택한 날짜 위치 강조
+  if(markIdx!=null&&markIdx>=0&&markIdx<N){const px=x(markIdx);
+    svg.insertAdjacentHTML('beforeend',`<line x1="${px}" y1="${padT}" x2="${px}" y2="${H-padB}" stroke="#2F8F7E" stroke-width="1.5" opacity="0.55"/>`);
+    svg.insertAdjacentHTML('beforeend',`<circle cx="${px}" cy="${padT}" r="3.2" fill="#2F8F7E"/>`);
+    svg.insertAdjacentHTML('beforeend',`<text x="${px}" y="${padT-4}" text-anchor="middle" fill="#2F8F7E" font-size="10" font-weight="700">선택</text>`);}
   if(eventFlags){eventFlags.forEach((f,i)=>{if(f){const px=x(i);
     svg.insertAdjacentHTML('beforeend',`<line x1="${px}" y1="${padT}" x2="${px}" y2="${H-padB}" stroke="#C2622F" stroke-width="1" stroke-dasharray="2 3" opacity="0.45"/>`);
     svg.insertAdjacentHTML('beforeend',`<circle cx="${px}" cy="${H-padB}" r="3" fill="#C2622F"/>`);}});}
@@ -1350,7 +1352,7 @@ function sideCountForView(e,side,view){
   const spots=((e.spots||{})[side])||[];let c=0;spots.forEach(s=>{if((tp.vals||{})[s.id]>0)c++;});return c;}
 function drawCharts(){const dts=sortedDates();
   // 하루 중 강도 변화 (자체 날짜 선택 · 미입력 구간 추정 보간 토글)
-  {const day=dayCurveDay||todayStr();const e=LOG[day]||{};
+  {const day=document.getElementById('entryDate').value||todayStr();const e=LOG[day]||{};
    const short=["기상","아침","오전","낮","밤","취침"];
    const interp=dayCurveInterp;
    const L=dayCurveSeries(e,'left'),R=dayCurveSeries(e,'right');
@@ -1360,8 +1362,9 @@ function drawCharts(){const dts=sortedDates();
      {color:'#C2622F',data:ld,est:interp?L.est:null},
      {color:'#3B6EA5',dash:true,data:rd,est:interp?R.est:null}
    ],dMax,false,short);}
+  const selDate=document.getElementById('entryDate').value;const selIdx=dts.indexOf(selDate);
   lineChart('farChart',[{color:'#C2622F',data:dts.map(d=>farRankForDay(LOG[d],'left'))},
-    {color:'#3B6EA5',dash:true,data:dts.map(d=>farRankForDay(LOG[d],'right'))}],8,true,null);
+    {color:'#3B6EA5',dash:true,data:dts.map(d=>farRankForDay(LOG[d],'right'))}],8,true,null,0,null,selIdx);
   // 증상 강도 추세 (선택 시점) + 기침·재채기 방사통 있던 날 표시
   const tv=tpViewMode;
   const coughDay=e=>{const cg=(e&&e.care&&e.care.cough)||{};return ((cg.zaps||[]).length||cg.zap||0)>0;};
@@ -1370,25 +1373,25 @@ function drawCharts(){const dts=sortedDates();
   lineChart('tpChart',[
     {color:'#C2622F',data:dts.map(d=>sideSumForView(LOG[d],'left',tv))},
     {color:'#3B6EA5',dash:true,data:dts.map(d=>sideSumForView(LOG[d],'right',tv))}
-  ],tpMax,false,null,null,evFlags);
+  ],tpMax,false,null,null,evFlags,selIdx);
   // 증상 범위 추세 (선택 시점)
   const rv=rangeViewMode;
   let cntMax=4;dts.forEach(d=>['left','right'].forEach(sd=>{const c=sideCountForView(LOG[d],sd,rv);if(c!=null&&c>cntMax)cntMax=c;}));
   lineChart('rangeChart',[
     {color:'#C2622F',data:dts.map(d=>sideCountForView(LOG[d],'left',rv))},
     {color:'#3B6EA5',dash:true,data:dts.map(d=>sideCountForView(LOG[d],'right',rv))}
-  ],cntMax,false,null,null,evFlags);
+  ],cntMax,false,null,null,evFlags,selIdx);
   // 척추위생 점수
   const scores=dts.map(d=>computeCareScore((LOG[d]||{}).care).score);
   let sMin=0;scores.forEach(v=>{if(v<sMin)sMin=v;});sMin=Math.floor(sMin);
-  lineChart('careScoreChart',[{color:'#2F8F7E',data:scores}],10,false,null,sMin);
+  lineChart('careScoreChart',[{color:'#2F8F7E',data:scores}],10,false,null,sMin,null,selIdx);
   // 연관통 추세: 아침(부위 합계) vs 하루 강도
   const dayMorningRef=e=>(e.referred||[]).reduce((a,v)=>a+(+v||0),0);
   let refMax=4;dts.forEach(d=>{const a=dayMorningRef(LOG[d]||{}),b=dayRefScore(LOG[d]||{});refMax=Math.max(refMax,a,b);});
   lineChart('refChart',[
     {color:'#3B6EA5',data:dts.map(d=>dayMorningRef(LOG[d]||{}))},
     {color:'#C2622F',dash:true,data:dts.map(d=>dayRefScore(LOG[d]||{}))}
-  ],refMax,false,null);
+  ],refMax,false,null,0,null,selIdx);
 }
 
 function renderDateStrip(){const box=document.getElementById('dateStrip');const dates=sortedDates().reverse();
@@ -1566,10 +1569,8 @@ async function init(){buildReferred();bindFlags();ensureTp();
   document.getElementById('spRegion').addEventListener('keydown',e=>{if(e.key==='Enter')addSpasm();});
   document.querySelectorAll('#tpView button').forEach(b=>b.onclick=()=>{tpViewMode=b.dataset.v;
     document.querySelectorAll('#tpView button').forEach(x=>x.classList.toggle('on',x===b));drawCharts();});
-  dayCurveDay=todayStr();document.getElementById('dayCurveDatePick').value=dayCurveDay;document.getElementById('dayCurveDatePick').max=todayStr();
   document.getElementById('modeRecord').onclick=()=>setViewMode('record');
   document.getElementById('modeTimeline').onclick=()=>setViewMode('timeline');
-  document.getElementById('dayCurveDatePick').onchange=e=>{dayCurveDay=e.target.value||todayStr();drawCharts();};
   document.getElementById('dayCurveInterp').onchange=e=>{dayCurveInterp=e.target.checked;drawCharts();};
   document.querySelectorAll('#rangeView button').forEach(b=>b.onclick=()=>{rangeViewMode=b.dataset.v;
     document.querySelectorAll('#rangeView button').forEach(x=>x.classList.toggle('on',x===b));drawCharts();});
