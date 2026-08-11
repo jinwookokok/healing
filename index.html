@@ -51,7 +51,7 @@
   @media (max-width:1000px){.layout{grid-template-columns:1fr}}
   .board{margin-top:16px}
   .trends{margin-bottom:8px}
-  .trendgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start}
+  .trendgrid{display:grid;grid-template-columns:minmax(220px,1fr) 1.7fr;gap:14px;align-items:start}
   @media (max-width:900px){.trendgrid{grid-template-columns:1fr}}
   .moretrends{margin-top:10px}
   .moretrends>summary{list-style:none;cursor:pointer;font-size:13px;font-weight:600;color:var(--muted);padding:10px 14px;background:var(--card);border:1px solid var(--line);border-radius:10px;text-align:center;transition:.12s}
@@ -119,7 +119,7 @@
   .trends{background:var(--bg-soft,#EEF2F1);border:1px solid var(--line);border-radius:16px;padding:16px;margin:16px 0 10px}
   .trends .card{margin-bottom:0;height:100%;display:flex;flex-direction:column}
   .trends .card svg{width:100%;height:188px;display:block;margin-top:auto}
-  .trendgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:stretch}
+  .trendgrid{display:grid;grid-template-columns:minmax(220px,1fr) 1.7fr;gap:14px;align-items:stretch}
   @media (max-width:900px){.trendgrid{grid-template-columns:1fr}}
   .recordarea{border-top:2px dashed var(--line);margin-top:18px;padding-top:6px}
   .recordhead{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:6px 0 12px}
@@ -696,7 +696,7 @@
 </div>
 
 <script>
-const APP_VERSION="4.4";
+const APP_VERSION="4.5";
 const LOCS=[
   {n:"목",r:1},{n:"어깨",r:2},{n:"견갑",r:2},{n:"위팔",r:3},{n:"팔꿈치",r:4},{n:"아래팔",r:5},
   {n:"손목",r:6},{n:"손등",r:7},{n:"손바닥",r:7},{n:"손날(척골측)",r:7},
@@ -1350,7 +1350,12 @@ function sideCountForView(e,side,view){
   if(view==='total')return dayActiveCount(e,side);
   const tp=(e.timepoints||{})[view];if(!tp)return null;
   const spots=((e.spots||{})[side])||[];let c=0;spots.forEach(s=>{if((tp.vals||{})[s.id]>0)c++;});return c;}
+function fitVB(svgId){const svg=document.getElementById(svgId);if(!svg)return;
+  const r=svg.getBoundingClientRect();if(!r.width||!r.height)return;
+  const h=220;const w=Math.max(400,Math.round(r.width/r.height*h));
+  svg.setAttribute('viewBox','0 0 '+w+' '+h);}
 function drawCharts(){const dts=sortedDates();
+  ['dayCurveChart','farChart','tpChart','rangeChart','careScoreChart','refChart'].forEach(fitVB);
   // 하루 중 강도 변화 (자체 날짜 선택 · 미입력 구간 추정 보간 토글)
   {const day=document.getElementById('entryDate').value||todayStr();const e=LOG[day]||{};
    const short=["기상","아침","오전","낮","밤","취침"];
@@ -1572,6 +1577,7 @@ async function init(){buildReferred();bindFlags();ensureTp();
   document.getElementById('modeRecord').onclick=()=>setViewMode('record');
   document.getElementById('modeTimeline').onclick=()=>setViewMode('timeline');
   document.getElementById('dayCurveInterp').onchange=e=>{dayCurveInterp=e.target.checked;drawCharts();};
+  let _rz=null;window.addEventListener('resize',()=>{clearTimeout(_rz);_rz=setTimeout(()=>{if(viewMode==='record')drawCharts();},200);});
   document.querySelectorAll('#rangeView button').forEach(b=>b.onclick=()=>{rangeViewMode=b.dataset.v;
     document.querySelectorAll('#rangeView button').forEach(x=>x.classList.toggle('on',x===b));drawCharts();});
   document.getElementById('today').addEventListener('input',()=>{scheduleAutosave();renderCareScore();});
