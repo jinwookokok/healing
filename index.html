@@ -64,6 +64,7 @@
   .viewtabs{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px}
   .extypes{display:flex;flex-wrap:wrap;gap:6px}
   .nonechk{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);margin-bottom:8px;cursor:pointer}
+  .durhint{font-size:12px;color:var(--good);font-weight:700;align-self:center;min-width:64px}
   .modeswitch{margin-left:auto;display:flex;gap:0;background:rgba(255,255,255,.25);border-radius:9px;padding:2px}
   .modeswitch button{border:0;background:none;color:#fff;font-size:12px;font-weight:700;padding:6px 12px;border-radius:7px;cursor:pointer;opacity:.8}
   .modeswitch button.on{background:#fff;color:var(--good);opacity:1}
@@ -529,10 +530,11 @@
 
         <div class="subh">이동 <span>· 운전·택시/보조석 1시간당 -1 · 수단·시작·시간 추가</span></div>
         <div class="spasmrow">
-          <div class="field" style="flex:0 0 120px"><label>수단</label>
+          <div class="field" style="flex:0 0 110px"><label>수단</label>
             <select id="mvMode"><option>운전</option><option>버스</option><option>지하철</option><option>택시/보조석</option></select></div>
-          <div class="field" style="flex:0 0 120px"><label>시작</label><input type="time" id="mvTime"></div>
-          <div class="field" style="flex:0 0 92px"><label>시간 <span class="micro">분</span></label><input type="number" id="mvMin" min="0" placeholder="0"></div>
+          <div class="field" style="flex:0 0 100px"><label>시작</label><input type="time" id="mvTime"></div>
+          <div class="field" style="flex:0 0 100px"><label>끝</label><input type="time" id="mvEnd"></div>
+          <span class="durhint" id="mvDur"></span>
           <button class="btn ghost" id="mvAdd" style="width:auto;padding:9px 14px">추가</button>
         </div>
         <div class="spasmlist" id="mvList"></div>
@@ -550,10 +552,11 @@
           <span class="modeitem">30분 쉬기 거름 <input type="number" id="hgMissed" min="0" placeholder="0"><span class="mu">회</span></span>
         </div>
 
-        <div class="subh">운동 <span>· 하면 +1, 안 하면 -1 · 세션마다 시작·시간·종목 추가</span></div>
+        <div class="subh">운동 <span>· 하면 +1, 안 하면 -1 · 세션마다 시작·끝·종목 추가</span></div>
         <div class="spasmrow">
-          <div class="field" style="flex:0 0 120px"><label>시작</label><input type="time" id="exTime"></div>
-          <div class="field" style="flex:0 0 92px"><label>시간 <span class="micro">분</span></label><input type="number" id="exMin" min="0" placeholder="0"></div>
+          <div class="field" style="flex:0 0 110px"><label>시작</label><input type="time" id="exTime"></div>
+          <div class="field" style="flex:0 0 110px"><label>끝</label><input type="time" id="exEnd"></div>
+          <span class="durhint" id="exDur"></span>
         </div>
         <div style="font-size:11.5px;color:var(--muted);margin:4px 0 4px">종목 (여러 개 선택 가능)</div>
         <div class="extypes" id="exTypes"></div>
@@ -601,10 +604,11 @@
           </div>
         </div>
 
-        <div class="subh">누워 쉰 시간 <span>· 시작·시간 추가 (기록용)</span></div>
+        <div class="subh">누워 쉰 시간 <span>· 시작·끝 추가 (기록용)</span></div>
         <div class="spasmrow">
-          <div class="field" style="flex:0 0 120px"><label>시작</label><input type="time" id="restTime"></div>
-          <div class="field" style="flex:0 0 92px"><label>시간 <span class="micro">분</span></label><input type="number" id="restMin" min="0" placeholder="0"></div>
+          <div class="field" style="flex:0 0 100px"><label>시작</label><input type="time" id="restTime"></div>
+          <div class="field" style="flex:0 0 100px"><label>끝</label><input type="time" id="restEnd"></div>
+          <span class="durhint" id="restDur"></span>
           <button class="btn ghost" id="restAdd" style="width:auto;padding:9px 14px">추가</button>
         </div>
         <div class="spasmlist" id="restList"></div>
@@ -696,7 +700,7 @@
 </div>
 
 <script>
-const APP_VERSION="4.6";
+const APP_VERSION="4.7";
 const LOCS=[
   {n:"목",r:1},{n:"어깨",r:2},{n:"견갑",r:2},{n:"위팔",r:3},{n:"팔꿈치",r:4},{n:"아래팔",r:5},
   {n:"손목",r:6},{n:"손등",r:7},{n:"손바닥",r:7},{n:"손날(척골측)",r:7},
@@ -1082,16 +1086,16 @@ function num(id){const v=parseFloat(document.getElementById(id).value);return is
 let sleepLevel="";let sleepTags=[];
 let moveState=[],exerciseState=[],restState=[];
 function gatherCare(){return{
-    move:moveState.map(m=>({mode:m.mode,time:m.time,min:m.min})),
+    move:moveState.map(m=>({mode:m.mode,time:m.time,end:m.end||'',min:m.min})),
     work:{commute:document.getElementById('wkCommute').checked,inAt:document.getElementById('wkIn').value,outAt:document.getElementById('wkOut').value,
       monitor:num('hgMonitor'),meeting:num('hgMeeting'),missedBreaks:num('hgMissed')},
-    exercise:{list:exerciseState.map(x=>({types:(x.types||(x.type?[x.type]:[])),time:x.time,min:x.min})),bad:document.getElementById('hgBadEx').checked},
+    exercise:{list:exerciseState.map(x=>({types:(x.types||(x.type?[x.type]:[])),time:x.time,end:x.end||'',min:x.min})),bad:document.getElementById('hgBadEx').checked},
     sleep:{pillow:document.getElementById('slpPillow').value,pillowOther:document.getElementById('slpPillowOther').value.trim(),
       sleepAt:document.getElementById('slpSleep').value,wakeAt:document.getElementById('slpWake').value,
       minutes:sleepMinutes(),tags:[...sleepTags],level:sleepLevel},
     daily:{headDown:document.getElementById('hgHeadDown').checked,headDownMany:document.getElementById('hgHeadDownMany').checked,
       badEvent:document.getElementById('hgBadEvent').checked,badEventNote:document.getElementById('hgBadEventNote').value.trim()},
-    rest:restState.map(r=>({time:r.time,min:r.min})),
+    rest:restState.map(r=>({time:r.time,end:r.end||'',min:r.min})),
     cough:{total:num('coughTotal'),zaps:coughZaps.map(z=>({intensity:z.intensity,time:z.time}))}};}
 function sleepMinutes(){const s=document.getElementById('slpSleep').value,w=document.getElementById('slpWake').value;
   if(!s||!w)return null;const [sh,sm]=s.split(':').map(Number),[wh,wm]=w.split(':').map(Number);
@@ -1105,11 +1109,18 @@ function renderSleepChips(){
   document.querySelectorAll('#slpTags .qchip').forEach(b=>b.classList.toggle('on',sleepTags.includes(b.dataset.t)));
   document.querySelectorAll('#slpLevel .qchip').forEach(b=>b.classList.toggle('on',b.dataset.l===sleepLevel));}
 /* list renderers */
+function addMinutes(hhmm,min){if(!hhmm)return "";const [h,m]=hhmm.split(':').map(Number);let t=h*60+m+(+min||0);t=((t%1440)+1440)%1440;return String(Math.floor(t/60)).padStart(2,'0')+':'+String(t%60).padStart(2,'0');}
+function itemTimeStr(o){ // 시작~끝 · N분 (끝 없으면 시작+분에서 유도)
+  const start=o.time||"";const min=o.min||0;const end=o.end||(start?addMinutes(start,min):"");
+  if(start&&end)return `${start}~${end} · ${min}분`;
+  if(start)return `${start} · ${min}분`;
+  return `${min}분`;
+}
 function listItemHtml(label){return `<span style="font-weight:600">${label}</span>`;}
 function renderMoveList(){const box=document.getElementById('mvList');if(!box)return;box.innerHTML="";
   if(!moveState.length){box.innerHTML='<div style="font-size:12px;color:var(--faint)">이동 없음</div>';return;}
   moveState.forEach((m,i)=>{const d=document.createElement('div');d.className='spasmitem';
-    d.innerHTML=`<span style="font-weight:600">${m.mode}</span><span style="color:var(--muted)">${m.time||"시작 미기록"} · ${m.min||0}분</span><button class="si-x">×</button>`;
+    d.innerHTML=`<span style="font-weight:600">${m.mode}</span><span style="color:var(--muted)">${itemTimeStr(m)}</span><button class="si-x">×</button>`;
     d.querySelector('.si-x').onclick=()=>{moveState.splice(i,1);renderMoveList();renderCareScore();scheduleAutosave();};box.appendChild(d);});}
 const EX_TYPES=["걷기","트레드밀","사이클","다리로밀기","무릎펴기"];
 let exSel=[]; // currently selected type chips for the session being added
@@ -1122,26 +1133,33 @@ function renderExList(){const box=document.getElementById('exList');if(!box)retu
   if(!exerciseState.length){box.innerHTML='<div style="font-size:12px;color:var(--faint)">운동 없음</div>';return;}
   exerciseState.forEach((x,i)=>{const d=document.createElement('div');d.className='spasmitem';
     const types=(x.types&&x.types.length)?x.types.join("·"):(x.type||"운동");
-    d.innerHTML=`<span style="font-weight:600">${types.replace(/</g,'&lt;')}</span><span style="color:var(--muted)">${x.time||"시작 미기록"} · ${x.min||0}분</span><button class="si-x">×</button>`;
+    d.innerHTML=`<span style="font-weight:600">${types.replace(/</g,'&lt;')}</span><span style="color:var(--muted)">${itemTimeStr(x)}</span><button class="si-x">×</button>`;
     d.querySelector('.si-x').onclick=()=>{exerciseState.splice(i,1);renderExList();renderCareScore();scheduleAutosave();};box.appendChild(d);});}
 function renderRestList(){const box=document.getElementById('restList');if(!box)return;box.innerHTML="";
   if(!restState.length){box.innerHTML='<div style="font-size:12px;color:var(--faint)">누워 쉼 없음</div>';return;}
   restState.forEach((r,i)=>{const d=document.createElement('div');d.className='spasmitem';
-    d.innerHTML=`<span style="font-weight:600">누워 쉼</span><span style="color:var(--muted)">${r.time||"시작 미기록"} · ${r.min||0}분</span><button class="si-x">×</button>`;
+    d.innerHTML=`<span style="font-weight:600">누워 쉼</span><span style="color:var(--muted)">${itemTimeStr(r)}</span><button class="si-x">×</button>`;
     d.querySelector('.si-x').onclick=()=>{restState.splice(i,1);renderRestList();scheduleAutosave();};box.appendChild(d);});}
-function addMove(){const min=parseFloat(document.getElementById('mvMin').value)||0;if(!min)return;
-  moveState.push({mode:document.getElementById('mvMode').value,time:document.getElementById('mvTime').value||"",min:min});
-  document.getElementById('mvTime').value="";document.getElementById('mvMin').value="";renderMoveList();renderCareScore();scheduleAutosave();}
-function addEx(){const min=parseFloat(document.getElementById('exMin').value)||0;
+function liveDur(startId,endId,hintId){const s=document.getElementById(startId).value,e=document.getElementById(endId).value;
+  const el=document.getElementById(hintId);if(!el)return;const d=durMinutes(s,e);el.textContent=(d!=null)?fmtSleep(d):"";}
+function addMove(){const s=document.getElementById('mvTime').value,e=document.getElementById('mvEnd').value;
+  if(!s||!e)return;const min=durMinutes(s,e)||0;
+  moveState.push({mode:document.getElementById('mvMode').value,time:s,end:e,min:min});
+  document.getElementById('mvTime').value="";document.getElementById('mvEnd').value="";document.getElementById('mvDur').textContent="";
+  renderMoveList();renderCareScore();scheduleAutosave();}
+function addEx(){const s=document.getElementById('exTime').value,e=document.getElementById('exEnd').value;
   const other=document.getElementById('exOther').value.trim();
   const types=[...exSel];if(other)types.push(other);
-  if(!min&&!types.length)return;
-  exerciseState.push({types:types,time:document.getElementById('exTime').value||"",min:min});
-  document.getElementById('exTime').value="";document.getElementById('exMin').value="";document.getElementById('exOther').value="";
+  const min=(s&&e)?(durMinutes(s,e)||0):0;
+  if(!types.length&&!(s&&e))return;
+  exerciseState.push({types:types,time:s||"",end:e||"",min:min});
+  document.getElementById('exTime').value="";document.getElementById('exEnd').value="";document.getElementById('exOther').value="";document.getElementById('exDur').textContent="";
   exSel=[];buildExTypes();renderExList();renderCareScore();scheduleAutosave();}
-function addRest(){const min=parseFloat(document.getElementById('restMin').value)||0;if(!min)return;
-  restState.push({time:document.getElementById('restTime').value||"",min:min});
-  document.getElementById('restTime').value="";document.getElementById('restMin').value="";renderRestList();scheduleAutosave();}
+function addRest(){const s=document.getElementById('restTime').value,e=document.getElementById('restEnd').value;
+  if(!s||!e)return;const min=durMinutes(s,e)||0;
+  restState.push({time:s,end:e,min:min});
+  document.getElementById('restTime').value="";document.getElementById('restEnd').value="";document.getElementById('restDur').textContent="";
+  renderRestList();scheduleAutosave();}
 
 /* ===== care score (computed; handles both old object shape and new list shape) ===== */
 const SLEEP_LVL={'최악':-2,'하':-1,'중':0,'상':1,'숙면':2};
@@ -1212,7 +1230,7 @@ function fillForm(e){e=e||{};
   const c=e.care||{};const mv=c.move,wk=c.work||{},ex=c.exercise||{},sl=c.sleep||{},dl=c.daily||{};
   const setv=(id,v)=>{const el=document.getElementById(id);if(el)el.value=(v||v===0)?v:"";};
   // 이동: list (migrate old {drive,bus,subway,taxi} → entries, 운전 임의 14:00)
-  if(Array.isArray(mv))moveState=mv.map(m=>({mode:m.mode,time:m.time||"",min:m.min||0}));
+  if(Array.isArray(mv))moveState=mv.map(m=>({mode:m.mode,time:m.time||"",end:m.end||"",min:m.min||0}));
   else{moveState=[];if(mv){if(mv.drive)moveState.push({mode:'운전',time:'14:00',min:mv.drive});
     if(mv.bus)moveState.push({mode:'버스',time:'',min:mv.bus});if(mv.subway)moveState.push({mode:'지하철',time:'',min:mv.subway});
     if(mv.taxi)moveState.push({mode:'택시/보조석',time:'',min:mv.taxi});}}
@@ -1222,7 +1240,7 @@ function fillForm(e){e=e||{};
   document.getElementById('wkIn').value=wk.inAt||"";document.getElementById('wkOut').value=wk.outAt||"";calcWorkDur();
   setv('hgMonitor',wk.monitor);setv('hgMeeting',wk.meeting);setv('hgMissed',wk.missedBreaks);
   // 운동: list (migrate old {walk,treadmill} → 걷기 06:00 / 트레드밀 15:00)
-  if(Array.isArray(ex.list))exerciseState=ex.list.map(x=>({types:(x.types||(x.type?[x.type]:[])),time:x.time||"",min:x.min||0}));
+  if(Array.isArray(ex.list))exerciseState=ex.list.map(x=>({types:(x.types||(x.type?[x.type]:[])),time:x.time||"",end:x.end||"",min:x.min||0}));
   else{exerciseState=[];if(ex.walk)exerciseState.push({types:['걷기'],time:'06:00',min:ex.walk});
     if(ex.treadmill)exerciseState.push({types:['트레드밀'],time:'15:00',min:ex.treadmill});}
   exSel=[];buildExTypes();renderExList();document.getElementById('hgBadEx').checked=!!ex.bad;
@@ -1230,7 +1248,7 @@ function fillForm(e){e=e||{};
   document.getElementById('pillowOtherWrap').style.display=(sl.pillow==='기타')?'inline-flex':'none';
   document.getElementById('slpSleep').value=sl.sleepAt||"";document.getElementById('slpWake').value=sl.wakeAt||"";
   sleepTags=Array.isArray(sl.tags)?[...sl.tags]:[];sleepLevel=sl.level||"";renderSleepChips();calcSleepTotal();
-  restState=Array.isArray(c.rest)?c.rest.map(r=>({time:r.time||"",min:r.min||0})):[];renderRestList();
+  restState=Array.isArray(c.rest)?c.rest.map(r=>({time:r.time||"",end:r.end||"",min:r.min||0})):[];renderRestList();
   document.getElementById('hgHeadDown').checked=!!dl.headDown;document.getElementById('hgHeadDownMany').checked=!!dl.headDownMany;
   document.getElementById('hgBadEvent').checked=!!dl.badEvent;document.getElementById('hgBadEventNote').value=dl.badEventNote||"";
   const cg=c.cough||{};
@@ -1566,6 +1584,9 @@ async function init(){buildReferred();bindFlags();ensureTp();
   document.getElementById('coughAdd').onclick=addCoughZap;
   document.getElementById('mvAdd').onclick=addMove;
   document.getElementById('exAdd').onclick=addEx;
+  ['mvTime','mvEnd'].forEach(id=>document.getElementById(id).addEventListener('input',()=>liveDur('mvTime','mvEnd','mvDur')));
+  ['exTime','exEnd'].forEach(id=>document.getElementById(id).addEventListener('input',()=>liveDur('exTime','exEnd','exDur')));
+  ['restTime','restEnd'].forEach(id=>document.getElementById(id).addEventListener('input',()=>liveDur('restTime','restEnd','restDur')));
   buildExTypes();
   document.getElementById('exOther').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();addEx();}});
   document.getElementById('restAdd').onclick=addRest;
