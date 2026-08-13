@@ -120,6 +120,7 @@
   .trends{background:var(--bg-soft,#EEF2F1);border:1px solid var(--line);border-radius:16px;padding:16px;margin:16px 0 10px}
   .trends .card{margin-bottom:0;height:100%;display:flex;flex-direction:column}
   .trends .card svg{width:100%;height:188px;display:block;margin-top:auto}
+  .trends .card svg#dayDetailChart{height:300px}
   .trendgrid{display:grid;grid-template-columns:minmax(220px,1fr) 1.7fr;gap:14px;align-items:stretch}
   @media (max-width:900px){.trendgrid{grid-template-columns:1fr}}
   .recordarea{border-top:2px dashed var(--line);margin-top:18px;padding-top:6px}
@@ -393,6 +394,19 @@
           <svg id="tpChart" viewBox="0 0 640 220"></svg>
         </div>
       </div>
+      <div class="card" style="margin-top:12px">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:4px">
+          <h2 style="margin:0">하루 중 강도 상세변화 <span style="font-weight:400;color:var(--faint);font-size:12px">· 위에서 고른 날짜 · 실제 기록 시각 기준</span></h2>
+        </div>
+        <p class="hint">각 시점을 <b>기록한 실제 시각</b> 위치에 찍어 하루 흐름을 봅니다. 시각을 안 적은 시점은 기본 시간대(추정)로 <b>속 빈 원(호박색)</b> 표시됩니다. 아래 띠는 수면·업무·운동·이동 구간입니다. 왼손=실선, 오른손=점선. 새벽 5시~다음날 5시.</p>
+        <div class="legend">
+          <span><i style="background:#C2622F"></i>왼손</span><span><i style="background:#3B6EA5"></i>오른손</span>
+          <span><i style="background:#fff;border:1.6px solid #C79A3E;border-radius:50%;width:8px;height:8px"></i>시각 추정</span>
+          <span><i style="background:#6C8EBF"></i>수면</span><span><i style="background:#8A8F98"></i>업무</span><span><i style="background:#2F8F7E"></i>운동</span><span><i style="background:#B07AA1"></i>이동</span>
+        </div>
+        <svg id="dayDetailChart" viewBox="0 0 900 300"></svg>
+      </div>
+
       <details class="moretrends">
         <summary>추세 더보기 · 증상 범위 · 척추위생 점수 · 연관통 · 중심화</summary>
         <div class="trendgrid" style="margin-top:12px">
@@ -700,7 +714,7 @@
 </div>
 
 <script>
-const APP_VERSION="4.7";
+const APP_VERSION="4.8";
 const LOCS=[
   {n:"목",r:1},{n:"어깨",r:2},{n:"견갑",r:2},{n:"위팔",r:3},{n:"팔꿈치",r:4},{n:"아래팔",r:5},
   {n:"손목",r:6},{n:"손등",r:7},{n:"손바닥",r:7},{n:"손날(척골측)",r:7},
@@ -1372,8 +1386,60 @@ function fitVB(svgId){const svg=document.getElementById(svgId);if(!svg)return;
   const r=svg.getBoundingClientRect();if(!r.width||!r.height)return;
   const h=220;const w=Math.max(400,Math.round(r.width/r.height*h));
   svg.setAttribute('viewBox','0 0 '+w+' '+h);}
+function fitVBh(svgId,h){const svg=document.getElementById(svgId);if(!svg)return;
+  const r=svg.getBoundingClientRect();if(!r.width||!r.height)return;
+  const w=Math.max(600,Math.round(r.width/r.height*h));
+  svg.setAttribute('viewBox','0 0 '+w+' '+h);}
+const DETAIL_DEF={morning:'07:00',am2:'08:00',forenoon:'10:00',afternoon:'14:00',evening:'20:00',night:'22:00'};
+function minFrom5(hhmm){if(!hhmm)return null;const [h,m]=hhmm.split(':').map(Number);return (((h*60+m)-300)+1440)%1440;}
+function renderDayDetail(){
+  const svg=document.getElementById('dayDetailChart');if(!svg)return;
+  const day=document.getElementById('entryDate').value||todayStr();const e=LOG[day]||{};
+  const vb=svg.getAttribute('viewBox').split(' ');const W=+vb[2],H=+vb[3];
+  const padL=44,padR=16,padT=16;const axisW=W-padL-padR;
+  const bandTop=H-84, chartBot=bandTop-14;
+  const xOf=mm=>padL+(mm/1440)*axisW;
+  svg.innerHTML="";
+  // 세로 시간선 (3시간 간격: 05,08,11,14,17,20,23,02)
+  let g="";for(let hh=0;hh<=1440;hh+=180){const clock=((300+hh)%1440);const lab=String(Math.floor(clock/60)).padStart(2,'0')+":00";
+    const px=xOf(hh);g+=`<line x1="${px}" y1="${padT}" x2="${px}" y2="${bandTop+70}" stroke="#EEF1F0"/>`;
+    g+=`<text x="${px}" y="${H-4}" text-anchor="middle" fill="#A7B2AE" font-size="10">${lab}</text>`;}
+  svg.insertAdjacentHTML('beforeend',g);
+  // 강도 포인트
+  function pts(side){const arr=[];TPS.forEach(t=>{const tp=(e.timepoints||{})[t.k];const v=dayTpSum(e,side,t.k);
+    if(v==null)return;const hasT=tp&&tp.time;const mm=minFrom5(hasT?tp.time:DETAIL_DEF[t.k]);if(mm==null)return;
+    arr.push({mm,v,est:!hasT});});arr.sort((a,b)=>a.mm-b.mm);return arr;}
+  const L=pts('left'),R=pts('right');
+  let vMax=6;[...L,...R].forEach(p=>{if(p.v>vMax)vMax=Math.ceil(p.v);});
+  const yOf=v=>chartBot-(v/vMax)*(chartBot-padT);
+  // y 눈금
+  let gy="";const stepY=Math.max(1,Math.ceil(vMax/4));
+  for(let k=0;k<=vMax;k+=stepY){const yy=yOf(k);gy+=`<line x1="${padL}" y1="${yy}" x2="${W-padR}" y2="${yy}" stroke="#F2F5F4"/>`;
+    gy+=`<text x="${padL-7}" y="${yy+4}" text-anchor="end" fill="#A7B2AE" font-size="10">${k}</text>`;}
+  svg.insertAdjacentHTML('beforeend',gy);
+  function drawSide(arr,color,dash){if(!arr.length)return;let d="";arr.forEach((p,i)=>{d+=(i?"L":"M")+xOf(p.mm)+" "+yOf(p.v)+" ";});
+    svg.insertAdjacentHTML('beforeend',`<path d="${d}" fill="none" stroke="${color}" stroke-width="2.2" stroke-linejoin="round"${dash?' stroke-dasharray="5 4"':''}/>`);
+    arr.forEach(p=>{if(p.est)svg.insertAdjacentHTML('beforeend',`<circle cx="${xOf(p.mm)}" cy="${yOf(p.v)}" r="3.4" fill="#fff" stroke="#C79A3E" stroke-width="1.6"/>`);
+      else svg.insertAdjacentHTML('beforeend',`<circle cx="${xOf(p.mm)}" cy="${yOf(p.v)}" r="3.6" fill="${color}"/>`);});}
+  drawSide(L,'#C2622F',false);drawSide(R,'#3B6EA5',true);
+  // 활동 띠
+  const c=e.care||{};const lanes=[['수면','#6C8EBF'],['업무','#8A8F98'],['운동','#2F8F7E'],['이동','#B07AA1']];
+  const laneH=16,laneGap=3;
+  lanes.forEach((ln,i)=>{const y=bandTop+i*(laneH+laneGap);
+    svg.insertAdjacentHTML('beforeend',`<text x="4" y="${y+12}" fill="#8A9893" font-size="9">${ln[0]}</text>`);
+    svg.insertAdjacentHTML('beforeend',`<line x1="${padL}" y1="${y+laneH/2}" x2="${W-padR}" y2="${y+laneH/2}" stroke="#F2F5F4"/>`);});
+  function band(laneIdx,start,dur,color,label){if(!start||!dur)return;const mm=minFrom5(start);if(mm==null)return;
+    const y=bandTop+laneIdx*(laneH+laneGap);let w=(dur/1440)*axisW;const x=xOf(mm);if(x+w>W-padR)w=(W-padR)-x;if(w<2)w=2;
+    svg.insertAdjacentHTML('beforeend',`<rect x="${x}" y="${y}" width="${w}" height="${laneH}" rx="3" fill="${color}" opacity="0.85"><title>${label}</title></rect>`);}
+  const sl=c.sleep||{};if(sl.sleepAt&&sl.wakeAt)band(0,sl.sleepAt,durMinutes(sl.sleepAt,sl.wakeAt),'#6C8EBF','수면 '+sl.sleepAt+'~'+sl.wakeAt);
+  const wk=c.work||{};if(wk.inAt&&wk.outAt)band(1,wk.inAt,durMinutes(wk.inAt,wk.outAt),'#8A8F98','업무 '+wk.inAt+'~'+wk.outAt);
+  ((c.exercise&&Array.isArray(c.exercise.list))?c.exercise.list:[]).forEach(x=>{if(x.time)band(2,x.time,x.min||durMinutes(x.time,x.end),'#2F8F7E','운동');});
+  (Array.isArray(c.move)?c.move:[]).forEach(m=>{if(m.time)band(3,m.time,m.min||durMinutes(m.time,m.end),'#B07AA1','이동 '+m.mode);});
+  (Array.isArray(c.rest)?c.rest:[]).forEach(r=>{}); // 누워쉼은 이번 단계에선 띠에 미표시(다음 단계)
+}
 function drawCharts(){const dts=sortedDates();
   ['dayCurveChart','farChart','tpChart','rangeChart','careScoreChart','refChart'].forEach(fitVB);
+  fitVBh('dayDetailChart',300);renderDayDetail();
   // 하루 중 강도 변화 (자체 날짜 선택 · 미입력 구간 추정 보간 토글)
   {const day=document.getElementById('entryDate').value||todayStr();const e=LOG[day]||{};
    const short=["기상","아침","오전","낮","밤","취침"];
