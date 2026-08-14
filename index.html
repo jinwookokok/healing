@@ -374,7 +374,7 @@
     <!-- ============ TOP: TRENDS ============ -->
     <section class="trends">
       <div class="colhead">추세 <span class="auto">실시간 반영</span></div>
-      <div class="trendgrid">
+      <div class="trendgrid" style="grid-template-columns:1fr 1fr">
         <div class="card">
           <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:4px">
             <h2 style="margin:0">하루 중 강도 변화 <span style="font-weight:400;color:var(--faint);font-size:12px">· 위에서 고른 날짜</span></h2>
@@ -385,6 +385,18 @@
           <svg id="dayCurveChart" viewBox="0 0 640 220"></svg>
         </div>
         <div class="card">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:4px">
+            <h2 style="margin:0">하루 중 강도 변화 <span style="font-weight:400;color:var(--faint);font-size:12px">· 여러 날 평균</span></h2>
+            <div class="viewtabs" id="avgRange">
+              <button data-r="14" class="on">최근 2주</button><button data-r="30">최근 1개월</button><button data-r="0">전체</button>
+            </div>
+          </div>
+          <p class="hint">여러 날의 시점별 값을 평균 낸 하루 리듬입니다. 각 시점은 그 시점을 실제 입력한 날들만 평균 내며, 미입력은 빠집니다. 요즘 아침에 높다가 낮에 풀리는지 등을 봅니다. 왼손=실선, 오른손=점선.</p>
+          <div class="legend"><span><i style="background:#C2622F"></i>왼손(실선)</span><span><i style="background:#3B6EA5;border-top:2px dashed #3B6EA5;height:0;width:18px"></i>오른손(점선)</span><span id="avgNote" style="color:var(--faint)"></span></div>
+          <svg id="dayAvgChart" viewBox="0 0 640 220"></svg>
+        </div>
+      </div>
+      <div class="card" style="margin-top:12px">
           <h2 style="margin:0 0 8px">증상 강도 추세 <span style="font-weight:400;color:var(--faint);font-size:12px">· 손별 합계</span></h2>
           <div class="viewtabs" id="tpView">
             <button data-v="total" class="on">하루(평균)</button><button data-v="morning">기상직후</button><button data-v="am2">아침</button><button data-v="forenoon">오전중</button><button data-v="afternoon">낮</button><button data-v="evening">오후·밤</button><button data-v="night">취침전</button>
@@ -393,7 +405,6 @@
           <div class="legend"><span><i style="background:#C2622F"></i>왼손(실선)</span><span><i style="background:#3B6EA5;border-top:2px dashed #3B6EA5;height:0;width:18px"></i>오른손(점선)</span><span><i style="background:#C2622F;border-radius:50%;width:8px;height:8px"></i>기침·재채기 방사통</span></div>
           <svg id="tpChart" viewBox="0 0 640 220"></svg>
         </div>
-      </div>
       <div class="card" style="margin-top:12px">
         <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:4px">
           <h2 style="margin:0">하루 중 강도 상세변화 <span style="font-weight:400;color:var(--faint);font-size:12px">· 위에서 고른 날짜 · 실제 기록 시각 기준</span></h2>
@@ -714,7 +725,7 @@
 </div>
 
 <script>
-const APP_VERSION="4.9";
+const APP_VERSION="5.0";
 const LOCS=[
   {n:"목",r:1},{n:"어깨",r:2},{n:"견갑",r:2},{n:"위팔",r:3},{n:"팔꿈치",r:4},{n:"아래팔",r:5},
   {n:"손목",r:6},{n:"손등",r:7},{n:"손바닥",r:7},{n:"손날(척골측)",r:7},
@@ -868,7 +879,7 @@ async function persist(){const ok=await storeSet(STORE_KEY,JSON.stringify(LOG));
 
 let spotsState={left:[],right:[]},tpData={},tpFreq={},tpTouched={},tpTimes={},tpInterp={},curTp="morning";
 let spasmState=[];
-let tpViewMode='total',rangeViewMode='total',dayCurveDay='',dayCurveInterp=true;
+let tpViewMode='total',rangeViewMode='total',dayCurveDay='',dayCurveInterp=true,avgRangeDays=14;
 let viewMode='record';
 function setViewMode(m){
   viewMode=m;
@@ -1440,8 +1451,21 @@ function renderDayDetail(){
   (Array.isArray(c.move)?c.move:[]).forEach(m=>{if(m.time)bandDur(3,m.time,m.min||durMinutes(m.time,m.end),'#B07AA1','이동 '+m.mode);});
   (Array.isArray(c.rest)?c.rest:[]).forEach(r=>{if(r.time)bandDur(4,r.time,r.min||durMinutes(r.time,r.end),'#C79A3E','누워쉼 '+r.time);});
 }
+function renderDayAvg(){
+  const short=["기상","아침","오전","낮","밤","취침"];
+  const all=sortedDates();
+  let dts=all;
+  if(avgRangeDays>0){const cut=new Date();cut.setDate(cut.getDate()-avgRangeDays+1);
+    const cutStr=cut.getFullYear()+'-'+String(cut.getMonth()+1).padStart(2,'0')+'-'+String(cut.getDate()).padStart(2,'0');
+    dts=all.filter(d=>d>=cutStr);}
+  function avgSide(side){return TPS.map(t=>{let sum=0,n=0;dts.forEach(d=>{const v=dayTpSum(LOG[d],side,t.k);if(v!=null){sum+=v;n++;}});return n?+(sum/n).toFixed(2):null;});}
+  const L=avgSide('left'),R=avgSide('right');
+  let mx=6;[...L,...R].forEach(v=>{if(v!=null&&v>mx)mx=Math.ceil(v);});
+  const note=document.getElementById('avgNote');if(note)note.textContent=dts.length?`${dts.length}일 평균`:'기록 없음';
+  lineChart('dayAvgChart',[{color:'#C2622F',data:L},{color:'#3B6EA5',dash:true,data:R}],mx,false,short);
+}
 function drawCharts(){const dts=sortedDates();
-  ['dayCurveChart','farChart','tpChart','rangeChart','careScoreChart','refChart'].forEach(fitVB);
+  ['dayCurveChart','dayAvgChart','farChart','tpChart','rangeChart','careScoreChart','refChart'].forEach(fitVB);
   fitVBh('dayDetailChart',300);renderDayDetail();
   // 하루 중 강도 변화 (자체 날짜 선택 · 미입력 구간 추정 보간 토글)
   {const day=document.getElementById('entryDate').value||todayStr();const e=LOG[day]||{};
@@ -1454,6 +1478,7 @@ function drawCharts(){const dts=sortedDates();
      {color:'#C2622F',data:ld,est:interp?L.est:null},
      {color:'#3B6EA5',dash:true,data:rd,est:interp?R.est:null}
    ],dMax,false,short);}
+  renderDayAvg();
   const selDate=document.getElementById('entryDate').value;const selIdx=dts.indexOf(selDate);
   lineChart('farChart',[{color:'#C2622F',data:dts.map(d=>farRankForDay(LOG[d],'left'))},
     {color:'#3B6EA5',dash:true,data:dts.map(d=>farRankForDay(LOG[d],'right'))}],8,true,null,0,null,selIdx);
@@ -1662,6 +1687,8 @@ async function init(){buildReferred();bindFlags();ensureTp();
   document.getElementById('wkIn').addEventListener('input',()=>{calcWorkDur();renderCareScore();});
   document.getElementById('wkOut').addEventListener('input',()=>{calcWorkDur();renderCareScore();});
   document.getElementById('spRegion').addEventListener('keydown',e=>{if(e.key==='Enter')addSpasm();});
+  document.querySelectorAll('#avgRange button').forEach(b=>b.onclick=()=>{avgRangeDays=+b.dataset.r;
+    document.querySelectorAll('#avgRange button').forEach(x=>x.classList.toggle('on',x===b));renderDayAvg();});
   document.querySelectorAll('#tpView button').forEach(b=>b.onclick=()=>{tpViewMode=b.dataset.v;
     document.querySelectorAll('#tpView button').forEach(x=>x.classList.toggle('on',x===b));drawCharts();});
   document.getElementById('modeRecord').onclick=()=>setViewMode('record');
