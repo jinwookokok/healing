@@ -130,7 +130,7 @@
   .weatherbox .wx-main{font-size:13.5px;font-weight:700;color:var(--ink)}
   .weatherbox .wx-detail{font-size:11px;color:var(--faint)}
   .future-banner{background:#EAF1FB;border:1px solid #BCD3F0;color:#2C4D86;border-radius:10px;padding:10px 13px;font-size:12.5px;margin-bottom:12px}
-  #today.futurelock .inputsgrid .card:not(#memoCard){opacity:.42;pointer-events:none;filter:grayscale(.3)}
+  #today.futurelock .inputsgrid .card:not(#memoCard):not(#gratitudeCard):not(#insightCard){opacity:.42;pointer-events:none;filter:grayscale(.3)}
   #today.futurelock #memoCard{box-shadow:0 0 0 2px var(--good-soft)}
   .gdatebar{display:flex;align-items:center;gap:10px;background:var(--good-soft);border:1px solid #BFE0D8;border-radius:10px;padding:8px 12px}
   .gdatebar label{font-size:12.5px;font-weight:700;color:var(--good)}
@@ -374,31 +374,7 @@
     <!-- ============ TOP: TRENDS ============ -->
     <section class="trends">
       <div class="colhead">추세 <span class="auto">실시간 반영</span></div>
-      <div class="trendgrid" style="grid-template-columns:1fr 1fr">
-        <div class="card">
-          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:4px">
-            <h2 style="margin:0">하루 중 강도 변화 <span style="font-weight:400;color:var(--faint);font-size:12px">· 위에서 고른 날짜</span></h2>
-            <label style="display:flex;align-items:center;gap:4px;font-size:11.5px;color:var(--muted);cursor:pointer"><input type="checkbox" id="dayCurveInterp" checked style="width:14px;height:14px"> 미입력 추정</label>
-            <label style="display:flex;align-items:center;gap:4px;font-size:11.5px;color:var(--muted);cursor:pointer"><input type="checkbox" class="rangeToggle" style="width:14px;height:14px"> 범위 겹쳐보기</label>
-          </div>
-          <p class="hint">선택한 날의 6시점 강도 흐름. 왼손=실선, 오른손=점선. 미입력 구간은 앞뒤 입력값으로 추정해 잇고, 양 끝(기상직후·취침전)은 바로 옆 값으로 채웁니다. <b>추정 지점은 속 빈 원(호박색)</b>으로 표시됩니다.</p>
-          <div class="legend"><span><i style="background:#C2622F"></i>왼손(실선)</span><span><i style="background:#3B6EA5;border-top:2px dashed #3B6EA5;height:0;width:18px"></i>오른손(점선)</span><span><i style="background:#fff;border:1.6px solid #C79A3E;border-radius:50%;width:8px;height:8px"></i>추정</span></div>
-          <svg id="dayCurveChart" viewBox="0 0 640 220"></svg>
-        </div>
-        <div class="card">
-          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:4px">
-            <h2 style="margin:0">하루 중 강도 변화 <span style="font-weight:400;color:var(--faint);font-size:12px">· 여러 날 평균</span></h2>
-            <div class="viewtabs" id="avgRange">
-              <button data-r="14" class="on">최근 2주</button><button data-r="30">최근 1개월</button><button data-r="0">전체</button>
-            </div>
-            <label style="display:flex;align-items:center;gap:4px;font-size:11.5px;color:var(--muted);cursor:pointer"><input type="checkbox" class="rangeToggle" style="width:14px;height:14px"> 범위 겹쳐보기</label>
-          </div>
-          <p class="hint">여러 날의 시점별 값을 평균 낸 하루 리듬입니다. 각 시점은 그 시점을 실제 입력한 날들만 평균 내며, 미입력은 빠집니다. 요즘 아침에 높다가 낮에 풀리는지 등을 봅니다. 왼손=실선, 오른손=점선.</p>
-          <div class="legend"><span><i style="background:#C2622F"></i>왼손(실선)</span><span><i style="background:#3B6EA5;border-top:2px dashed #3B6EA5;height:0;width:18px"></i>오른손(점선)</span><span id="avgNote" style="color:var(--faint)"></span></div>
-          <svg id="dayAvgChart" viewBox="0 0 640 220"></svg>
-        </div>
-      </div>
-      <div class="card" style="margin-top:12px">
+      <div class="card">
           <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap">
             <h2 style="margin:0 0 8px">증상 강도 추세 <span style="font-weight:400;color:var(--faint);font-size:12px">· 손별 합계</span></h2>
             <div style="display:flex;gap:10px;flex-wrap:wrap">
@@ -429,8 +405,30 @@
       </div>
 
       <details class="moretrends">
-        <summary>추세 더보기 · 증상 범위 · 척추위생 점수 · 연관통 · 중심화</summary>
+        <summary>추세 더보기 · 하루 중 강도 변화 · 증상 범위 · 척추위생 점수 · 연관통 · 중심화</summary>
         <div class="trendgrid" style="margin-top:12px">
+          <div class="card">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:4px">
+              <h2 style="margin:0">하루 중 강도 변화 <span style="font-weight:400;color:var(--faint);font-size:12px">· 위에서 고른 날짜</span></h2>
+              <label style="display:flex;align-items:center;gap:4px;font-size:11.5px;color:var(--muted);cursor:pointer"><input type="checkbox" id="dayCurveInterp" checked style="width:14px;height:14px"> 미입력 추정</label>
+              <label style="display:flex;align-items:center;gap:4px;font-size:11.5px;color:var(--muted);cursor:pointer"><input type="checkbox" class="rangeToggle" style="width:14px;height:14px"> 범위 겹쳐보기</label>
+            </div>
+            <p class="hint">선택한 날의 6시점 강도 흐름. 왼손=실선, 오른손=점선. 미입력 구간은 앞뒤 입력값으로 추정해 잇고, 양 끝(기상직후·취침전)은 바로 옆 값으로 채웁니다. <b>추정 지점은 속 빈 원(호박색)</b>으로 표시됩니다.</p>
+            <div class="legend"><span><i style="background:#C2622F"></i>왼손(실선)</span><span><i style="background:#3B6EA5;border-top:2px dashed #3B6EA5;height:0;width:18px"></i>오른손(점선)</span><span><i style="background:#fff;border:1.6px solid #C79A3E;border-radius:50%;width:8px;height:8px"></i>추정</span></div>
+            <svg id="dayCurveChart" viewBox="0 0 640 220"></svg>
+          </div>
+          <div class="card">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:4px">
+              <h2 style="margin:0">하루 중 강도 변화 평균 <span style="font-weight:400;color:var(--faint);font-size:12px">· 여러 날 평균</span></h2>
+              <div class="viewtabs" id="avgRange">
+                <button data-r="14" class="on">최근 2주</button><button data-r="30">최근 1개월</button><button data-r="0">전체</button>
+              </div>
+              <label style="display:flex;align-items:center;gap:4px;font-size:11.5px;color:var(--muted);cursor:pointer"><input type="checkbox" class="rangeToggle" style="width:14px;height:14px"> 범위 겹쳐보기</label>
+            </div>
+            <p class="hint">여러 날의 시점별 값을 평균 낸 하루 리듬입니다. 각 시점은 그 시점을 실제 입력한 날들만 평균 내며, 미입력은 빠집니다. 요즘 아침에 높다가 낮에 풀리는지 등을 봅니다. 왼손=실선, 오른손=점선.</p>
+            <div class="legend"><span><i style="background:#C2622F"></i>왼손(실선)</span><span><i style="background:#3B6EA5;border-top:2px dashed #3B6EA5;height:0;width:18px"></i>오른손(점선)</span><span id="avgNote" style="color:var(--faint)"></span></div>
+            <svg id="dayAvgChart" viewBox="0 0 640 220"></svg>
+          </div>
           <div class="card">
             <h2 style="margin:0 0 8px">증상 범위 추세 <span style="font-weight:400;color:var(--faint);font-size:12px">· 부위 개수</span></h2>
             <div class="viewtabs" id="rangeView">
@@ -689,6 +687,18 @@
         <textarea id="memo" class="journal" placeholder="예) 아침엔 손끝 얼얼함이 덜했는데 오후 회의 뒤 다시 심해짐. 어제 무리하게 짐을 든 게 영향인 듯. 신전 자주 한 날은 확실히 저녁이 편하다…"></textarea>
       </div>
 
+      <div class="card" id="gratitudeCard">
+        <h2>감사 일기 <span style="font-weight:400;color:var(--faint);font-size:12px">· 감사함으로 하루 열고 닫기</span></h2>
+        <p class="hint">긍정적인 마음으로 하루를 시작하고 마무리하는 곳입니다. 아내와 아이들, 쉴 수 있는 집, 좋은 직장과 환경처럼 감사한 것들을 매일 적으며 잊지 않기로 해요.</p>
+        <textarea id="grat" class="journal" placeholder="예) 오늘 아침 가족의 얼굴을 볼 수 있어 감사하다. 오늘 하루도 회복을 향해 한 걸음 나아갈 수 있음에 감사하며 시작한다. / (저녁) 오늘도 무사히 하루를 보냈다. 함께해 준 가족과 일할 수 있는 환경에 감사하며 마무리한다…"></textarea>
+      </div>
+
+      <div class="card" id="insightCard">
+        <h2>배움·통찰 노트 <span style="font-weight:400;color:var(--faint);font-size:12px">· 라이브·책에서 얻은 지식</span></h2>
+        <p class="hint">정선근 교수의 라이브나 책, 그 밖의 자료에서 새로 알게 된 지식이나 통찰을 그때그때 모아두는 곳입니다. 나중에 다시 찾아보고 실천에 반영할 수 있습니다.</p>
+        <textarea id="learn" class="journal" placeholder="예) (백년목 2권 599쪽) 남은 저림은 중심화 없이 그 자리에서 서서히 사라질 수 있다. / 신전은 '오래 고정'이 아니라 '자주 짧게'가 원칙…"></textarea>
+      </div>
+
         </div><!-- /incol 척추위생·연관통 -->
       </div><!-- /inputsgrid -->
       </div><!-- /recordarea -->
@@ -735,7 +745,7 @@
 </div>
 
 <script>
-const APP_VERSION="5.3";
+const APP_VERSION="5.5";
 const LOCS=[
   {n:"목",r:1},{n:"어깨",r:2},{n:"견갑",r:2},{n:"위팔",r:3},{n:"팔꿈치",r:4},{n:"아래팔",r:5},
   {n:"손목",r:6},{n:"손등",r:7},{n:"손바닥",r:7},{n:"손날(척골측)",r:7},
@@ -1119,7 +1129,7 @@ function gather(){const tp={};TPS.forEach(t=>{if(tpTouched[t.k])tp[t.k]={time:tp
     referred:[...refLevels],refv2:true,
     refExt:{base:refExtBase,events:ovState.map(o=>({note:o.note,parts:[...(o.parts||[])]}))},
     flags:[...document.querySelectorAll('#flags input:checked')].map(c=>c.value),
-    memo:document.getElementById('memo').value.trim(),spasm:[...spasmState],care:gatherCare(),weather:currentWeather,
+    memo:document.getElementById('memo').value.trim(),grat:document.getElementById('grat').value.trim(),learn:document.getElementById('learn').value.trim(),spasm:[...spasmState],care:gatherCare(),weather:currentWeather,
     none:{left:document.getElementById('noneLeft').checked,right:document.getElementById('noneRight').checked},tp6:true,savedAt:new Date().toISOString()};}
 function num(id){const v=parseFloat(document.getElementById(id).value);return isNaN(v)?0:v;}
 let sleepLevel="";let sleepTags=[];
@@ -1266,6 +1276,8 @@ function fillForm(e){e=e||{};
   document.querySelectorAll('#flags input').forEach(c=>{c.checked=(e.flags||[]).includes(c.value);c.closest('.flag').classList.toggle('on',c.checked);});
   document.getElementById('alertBanner').classList.toggle('show',(e.flags||[]).length>0);
   document.getElementById('memo').value=e.memo||"";
+  document.getElementById('grat').value=e.grat||[e.gratMorning,e.gratEvening].filter(Boolean).join("\n")||"";
+  document.getElementById('learn').value=e.learn||"";
   const c=e.care||{};const mv=c.move,wk=c.work||{},ex=c.exercise||{},sl=c.sleep||{},dl=c.daily||{};
   const setv=(id,v)=>{const el=document.getElementById(id);if(el)el.value=(v||v===0)?v:"";};
   // 이동: list (migrate old {drive,bus,subway,taxi} → entries, 운전 임의 14:00)
@@ -1675,7 +1687,7 @@ function buildExport(){const dates=sortedDates();let t="■ 경추 증상 기록
 function csvEsc(v){v=(v==null?"":String(v));return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;}
 function morningRefSum(e){return (e.referred||[]).reduce((a,v)=>a+(+v||0),0);}
 function exportCSV(){const dts=sortedDates();
-  const head=["날짜","요일","왼손 가장먼지점","오른손 가장먼지점","왼손 강도합","오른손 강도합","왼손 부위수","오른손 부위수","아침 연관통합","하루 연관통강도","척추위생점수","기침찌릿횟수","날씨","최고기온","최저기온","강수mm","습도%","기압hPa","하루 통찰"];
+  const head=["날짜","요일","왼손 가장먼지점","오른손 가장먼지점","왼손 강도합","오른손 강도합","왼손 부위수","오른손 부위수","아침 연관통합","하루 연관통강도","척추위생점수","기침찌릿횟수","날씨","최고기온","최저기온","강수mm","습도%","기압hPa","하루 통찰","감사 일기","배움·통찰"];
   const rows=[head];const wdn=["일","월","화","수","목","금","토"];
   dts.forEach(d=>{const e=LOG[d]||{};const w=e.weather||{};const zap=((e.care&&e.care.cough&&e.care.cough.zaps)||[]).length;
     const ls=sideSumForView(e,'left','total'),rs=sideSumForView(e,'right','total');
@@ -1685,7 +1697,8 @@ function exportCSV(){const dts=sortedDates();
       morningRefSum(e),dayRefScore(e),computeCareScore(e.care).score,zap,
       w.code!=null?wxSummary(w.code)[1]:"",w.tmax!=null?Math.round(w.tmax):"",w.tmin!=null?Math.round(w.tmin):"",
       w.precip==null?"":w.precip,w.humidity==null?"":w.humidity,w.pressure==null?"":w.pressure,
-      (e.memo||"").replace(/\r?\n/g," ")]);});
+      (e.memo||"").replace(/\r?\n/g," "),
+      (e.grat||[e.gratMorning,e.gratEvening].filter(Boolean).join(" ")||"").replace(/\r?\n/g," "),(e.learn||"").replace(/\r?\n/g," ")]);});
   const csv="\ufeff"+rows.map(r=>r.map(csvEsc).join(",")).join("\r\n");
   const blob=new Blob([csv],{type:"text/csv;charset=utf-8"});
   const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=`경추기록-${todayStr()}.csv`;document.body.appendChild(a);a.click();a.remove();}
