@@ -401,8 +401,8 @@
           <div class="viewtabs" id="tpView">
             <button data-v="total" class="on">하루(평균)</button><button data-v="morning">기상직후</button><button data-v="am2">아침</button><button data-v="forenoon">오전중</button><button data-v="afternoon">낮</button><button data-v="evening">오후·밤</button><button data-v="night">취침전</button>
           </div>
-          <p class="hint">선택한 시점의 손별 강도 합계. <b>하루(평균)</b>은 입력된 시점들의 평균이라 입력 개수와 무관하게 날짜끼리 공정하게 비교됩니다. 왼손=실선, 오른손=점선.</p>
-          <div class="legend"><span><i style="background:#C2622F"></i>왼손(실선)</span><span><i style="background:#3B6EA5;border-top:2px dashed #3B6EA5;height:0;width:18px"></i>오른손(점선)</span><span><i style="background:#C2622F;border-radius:50%;width:8px;height:8px"></i>기침·재채기 방사통</span></div>
+          <p class="hint">진하게=강도(아픈 부위 강도 합), 옅게=범위(아픈 부위 개수)를 겹쳐 봅니다. 두 선이 같이 움직이면 강도·범위가 함께 변하는 것이고, 강도는 그대로인데 옅은 선만 오르면 범위가 넓어지는 것입니다. <b>하루(평균)</b>은 입력된 시점들의 평균입니다. 왼손=실선, 오른손=점선.</p>
+          <div class="legend"><span><i style="background:#C2622F"></i>왼손 강도</span><span><i style="background:#3B6EA5;border-top:2px dashed #3B6EA5;height:0;width:18px"></i>오른손 강도</span><span><i style="background:#C2622F;opacity:.35"></i>옅게=범위(부위 수)</span><span><i style="background:#C2622F;border-radius:50%;width:8px;height:8px"></i>기침·재채기</span></div>
           <svg id="tpChart" viewBox="0 0 640 220"></svg>
         </div>
       <div class="card" style="margin-top:12px">
@@ -725,7 +725,7 @@
 </div>
 
 <script>
-const APP_VERSION="5.0";
+const APP_VERSION="5.1";
 const LOCS=[
   {n:"목",r:1},{n:"어깨",r:2},{n:"견갑",r:2},{n:"위팔",r:3},{n:"팔꿈치",r:4},{n:"아래팔",r:5},
   {n:"손목",r:6},{n:"손등",r:7},{n:"손바닥",r:7},{n:"손날(척골측)",r:7},
@@ -1344,11 +1344,12 @@ function lineChart(svgId,series,yMax,rankLabels,xLabels,yMin,eventFlags,markIdx)
     svg.insertAdjacentHTML('beforeend',`<line x1="${px}" y1="${padT}" x2="${px}" y2="${H-padB}" stroke="#C2622F" stroke-width="1" stroke-dasharray="2 3" opacity="0.45"/>`);
     svg.insertAdjacentHTML('beforeend',`<circle cx="${px}" cy="${H-padB}" r="3" fill="#C2622F"/>`);}});}
   series.forEach(s=>{let pts=[],d="";s.data.forEach((v,i)=>{if(v==null)return;const px=x(i),py=y(v);
-    if(s.est&&s.est[i])pts.push(`<circle cx="${px}" cy="${py}" r="3.2" fill="#fff" stroke="#C79A3E" stroke-width="1.6"/>`);
-    else pts.push(`<circle cx="${px}" cy="${py}" r="3.4" fill="${s.color}"/>`);
+    if(!s.faint){if(s.est&&s.est[i])pts.push(`<circle cx="${px}" cy="${py}" r="3.2" fill="#fff" stroke="#C79A3E" stroke-width="1.6"/>`);
+    else pts.push(`<circle cx="${px}" cy="${py}" r="3.4" fill="${s.color}"/>`);}
     d+=(d?"L":"M")+px+" "+py+" ";});
     const dash=s.dash?` stroke-dasharray="5 4"`:"";
-    if(d)svg.insertAdjacentHTML('beforeend',`<path d="${d}" fill="none" stroke="${s.color}" stroke-width="2.2" stroke-linejoin="round"${dash}/>`);
+    const sw=s.faint?1.4:2.2;const op=s.faint?' opacity="0.35"':"";
+    if(d)svg.insertAdjacentHTML('beforeend',`<path d="${d}" fill="none" stroke="${s.color}" stroke-width="${sw}" stroke-linejoin="round"${dash}${op}/>`);
     pts.forEach(p=>svg.insertAdjacentHTML('beforeend',p));});
   const dts=sortedDates();
   const idxs=xLabels?xLabels.map((_,i)=>i):(dts.length<=5?dts.map((_,i)=>i):[0,Math.floor(dts.length/2),dts.length-1]);
@@ -1486,8 +1487,11 @@ function drawCharts(){const dts=sortedDates();
   const tv=tpViewMode;
   const coughDay=e=>{const cg=(e&&e.care&&e.care.cough)||{};return ((cg.zaps||[]).length||cg.zap||0)>0;};
   const evFlags=dts.map(d=>coughDay(LOG[d]));
-  let tpMax=6;dts.forEach(d=>['left','right'].forEach(sd=>{const v=sideSumForView(LOG[d],sd,tv);if(v!=null&&v>tpMax)tpMax=Math.ceil(v);}));
+  let tpMax=6;dts.forEach(d=>['left','right'].forEach(sd=>{const v=sideSumForView(LOG[d],sd,tv);if(v!=null&&v>tpMax)tpMax=Math.ceil(v);
+    const c=sideCountForView(LOG[d],sd,tv);if(c!=null&&c>tpMax)tpMax=Math.ceil(c);}));
   lineChart('tpChart',[
+    {color:'#C2622F',faint:true,data:dts.map(d=>sideCountForView(LOG[d],'left',tv))},
+    {color:'#3B6EA5',faint:true,dash:true,data:dts.map(d=>sideCountForView(LOG[d],'right',tv))},
     {color:'#C2622F',data:dts.map(d=>sideSumForView(LOG[d],'left',tv))},
     {color:'#3B6EA5',dash:true,data:dts.map(d=>sideSumForView(LOG[d],'right',tv))}
   ],tpMax,false,null,null,evFlags,selIdx);
