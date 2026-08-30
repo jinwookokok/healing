@@ -399,9 +399,9 @@
         <div class="legend">
           <span><i style="background:#C2622F"></i>왼손</span><span><i style="background:#3B6EA5"></i>오른손</span>
           <span><i style="background:#fff;border:1.6px solid #C79A3E;border-radius:50%;width:8px;height:8px"></i>시각 추정</span>
-          <span><i style="background:#6C8EBF"></i>수면</span><span><i style="background:#8A8F98"></i>업무</span><span><i style="background:#2F8F7E"></i>운동</span><span><i style="background:#B07AA1"></i>이동</span>
+          <span><i style="background:#6C8EBF"></i>수면</span><span><i style="background:#8A8F98"></i>업무</span><span><i style="background:#2F8F7E"></i>운동</span><span><i style="background:#B07AA1"></i>이동</span><span><i style="background:#C79A3E"></i>누워쉼</span><span><i style="background:#C0504D"></i>이벤트</span>
         </div>
-        <svg id="dayDetailChart" viewBox="0 0 900 300"></svg>
+        <svg id="dayDetailChart" viewBox="0 0 900 320"></svg>
       </div>
 
       <details class="moretrends">
@@ -646,10 +646,7 @@
         </div>
         <div class="spasmlist" id="restList"></div>
 
-        <div class="subh">일상</div>
-        <label class="chk"><input type="checkbox" id="hgHeadDown"> 일상 중 고개를 수그렸다 <span class="pen">-1</span></label>
-        <label class="chk"><input type="checkbox" id="hgHeadDownMany"> 여러 번 수그렸다 <span class="pen">추가 -1</span></label>
-        <div class="subh" style="margin-top:10px">특별한 이벤트 <span>· 시작·끝·내용 추가 · 안 좋았다면 마이너스 점수</span></div>
+        <div class="subh">일상 · 특별한 이벤트 <span>· 시작·끝·내용 추가 · 안 좋았다면 마이너스 점수</span></div>
         <div class="spasmrow">
           <div class="field" style="flex:1 1 150px"><label>내용</label><input type="text" id="evNote" placeholder="예: 무거운 짐을 옮김"></div>
           <div class="field" style="flex:0 0 92px"><label>시작</label><input type="time" id="evTime"></div>
@@ -754,7 +751,7 @@
 </div>
 
 <script>
-const APP_VERSION="5.6";
+const APP_VERSION="5.7";
 const LOCS=[
   {n:"목",r:1},{n:"어깨",r:2},{n:"견갑",r:2},{n:"위팔",r:3},{n:"팔꿈치",r:4},{n:"아래팔",r:5},
   {n:"손목",r:6},{n:"손등",r:7},{n:"손바닥",r:7},{n:"손날(척골측)",r:7},
@@ -1151,8 +1148,7 @@ function gatherCare(){return{
     sleep:{pillow:document.getElementById('slpPillow').value,pillowOther:document.getElementById('slpPillowOther').value.trim(),
       sleepAt:document.getElementById('slpSleep').value,wakeAt:document.getElementById('slpWake').value,
       minutes:sleepMinutes(),tags:[...sleepTags],level:sleepLevel},
-    daily:{headDown:document.getElementById('hgHeadDown').checked,headDownMany:document.getElementById('hgHeadDownMany').checked,
-      events:eventState.map(v=>({note:v.note,start:v.start||'',end:v.end||'',score:+v.score||0}))},
+    daily:{events:eventState.map(v=>({note:v.note,start:v.start||'',end:v.end||'',score:+v.score||0}))},
     rest:restState.map(r=>({time:r.time,end:r.end||'',min:r.min})),
     cough:{total:num('coughTotal'),zaps:coughZaps.map(z=>({intensity:z.intensity,time:z.time}))}};}
 function sleepMinutes(){const s=document.getElementById('slpSleep').value,w=document.getElementById('slpWake').value;
@@ -1326,7 +1322,6 @@ function fillForm(e){e=e||{};
   document.getElementById('slpSleep').value=sl.sleepAt||"";document.getElementById('slpWake').value=sl.wakeAt||"";
   sleepTags=Array.isArray(sl.tags)?[...sl.tags]:[];sleepLevel=sl.level||"";renderSleepChips();calcSleepTotal();
   restState=Array.isArray(c.rest)?c.rest.map(r=>({time:r.time||"",end:r.end||"",min:r.min||0})):[];renderRestList();
-  document.getElementById('hgHeadDown').checked=!!dl.headDown;document.getElementById('hgHeadDownMany').checked=!!dl.headDownMany;
   if(Array.isArray(dl.events))eventState=dl.events.map(v=>({note:v.note||"",start:v.start||"",end:v.end||"",score:+v.score||0}));
   else{eventState=[];if(dl.badEvent)eventState.push({note:dl.badEventNote||"",start:"",end:"",score:-1});}
   renderEvList();
@@ -1468,7 +1463,7 @@ function renderDayDetail(){
   const day=document.getElementById('entryDate').value||todayStr();const e=LOG[day]||{};
   const vb=svg.getAttribute('viewBox').split(' ');const W=+vb[2],H=+vb[3];
   const padL=44,padR=16,padT=16;const axisW=W-padL-padR;
-  const laneH=15,laneGap=3;const lanes=[['수면','#6C8EBF'],['업무','#8A8F98'],['운동','#2F8F7E'],['이동','#B07AA1'],['누워쉼','#C79A3E']];
+  const laneH=15,laneGap=3;const lanes=[['수면','#6C8EBF'],['업무','#8A8F98'],['운동','#2F8F7E'],['이동','#B07AA1'],['누워쉼','#C79A3E'],['이벤트','#C0504D']];
   const bandTop=H-(lanes.length*(laneH+laneGap))-16, chartBot=bandTop-14;
   const xOf=mm=>padL+(mm/1440)*axisW;
   svg.innerHTML="";
@@ -1518,6 +1513,10 @@ function renderDayDetail(){
   ((c.exercise&&Array.isArray(c.exercise.list))?c.exercise.list:[]).forEach(x=>{if(x.time)bandDur(2,x.time,x.min||durMinutes(x.time,x.end),'#2F8F7E','운동 '+x.time);});
   (Array.isArray(c.move)?c.move:[]).forEach(m=>{if(m.time)bandDur(3,m.time,m.min||durMinutes(m.time,m.end),'#B07AA1','이동 '+m.mode);});
   (Array.isArray(c.rest)?c.rest:[]).forEach(r=>{if(r.time)bandDur(4,r.time,r.min||durMinutes(r.time,r.end),'#C79A3E','누워쉼 '+r.time);});
+  const dl=c.daily||{};
+  (Array.isArray(dl.events)?dl.events:[]).forEach(v=>{if(!v.start)return;const mm=minOfDay(v.start);if(mm==null)return;
+    const col=(+v.score<0)?'#C0504D':'#9AA1A8';const lab='이벤트 '+(v.note||'')+((+v.score)?(' '+v.score):'');
+    const dur=durMinutes(v.start,v.end);if(dur)bandMM(5,mm,mm+dur,col,lab);else bandMM(5,mm,mm+12,col,lab);});
 }
 function renderDayAvg(){
   const short=["기상","아침","오전","낮","밤","취침"];
@@ -1539,7 +1538,7 @@ function renderDayAvg(){
 }
 function drawCharts(){const dts=sortedDates();
   ['dayCurveChart','dayAvgChart','farChart','tpChart','rangeChart','careScoreChart','refChart'].forEach(fitVB);
-  fitVBh('dayDetailChart',300);renderDayDetail();
+  fitVBh('dayDetailChart',320);renderDayDetail();
   // 하루 중 강도 변화 (자체 날짜 선택 · 미입력 구간 추정 보간 토글)
   {const day=document.getElementById('entryDate').value||todayStr();const e=LOG[day]||{};
    const short=["기상","아침","오전","낮","밤","취침"];
