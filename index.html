@@ -608,6 +608,12 @@
               <option>35베개</option><option>35+수건1장</option><option>35+수건2장</option><option>58베개</option><option>작은베개</option><option value="기타">기타(입력)</option>
             </select></span>
           <span class="sl" id="pillowOtherWrap" style="display:none"><input type="text" id="slpPillowOther" placeholder="베개 종류 입력" style="width:150px"></span>
+          <span class="sl"><span class="sllab">침대</span>
+            <select id="slpBed" style="width:auto">
+              <option value="">선택</option>
+              <option>안방 템퍼</option><option>안방 썰타</option><option>거실 레스트먼트 토퍼</option><option value="기타">기타(입력)</option>
+            </select></span>
+          <span class="sl" id="bedOtherWrap" style="display:none"><input type="text" id="slpBedOther" placeholder="침대 종류 입력" style="width:170px"></span>
         </div>
         <div class="sleeprow">
           <span class="sl"><span class="sllab">잠든 시각</span><input type="time" id="slpSleep"></span>
@@ -751,7 +757,7 @@
 </div>
 
 <script>
-const APP_VERSION="5.7";
+const APP_VERSION="5.8";
 const LOCS=[
   {n:"목",r:1},{n:"어깨",r:2},{n:"견갑",r:2},{n:"위팔",r:3},{n:"팔꿈치",r:4},{n:"아래팔",r:5},
   {n:"손목",r:6},{n:"손등",r:7},{n:"손바닥",r:7},{n:"손날(척골측)",r:7},
@@ -901,6 +907,22 @@ async function loadLog(){let v=await storeGet(STORE_KEY);if(v){try{LOG=JSON.pars
   for(const k of LEGACY_KEYS){const lv=await storeGet(k);if(lv){try{LOG=JSON.parse(lv);await storeSet(STORE_KEY,lv);return;}catch(e){}}}LOG={};}
 async function persist(){const ok=await storeSet(STORE_KEY,JSON.stringify(LOG));storageOK=ok;
   document.getElementById('storeWarn').classList.toggle('show',!ok);scheduleDrivePush();return ok;}
+async function backfillBeds(){
+  let done=false;try{done=(await storeGet('bed-backfill-v1'))==='1';}catch(e){}
+  if(done)return;
+  const ssleep=d=>{const e=LOG[d];if(!e)return null;e.care=e.care||{};e.care.sleep=e.care.sleep||{};return e.care.sleep;};
+  // 기록 시작~8/13: 안방 템퍼 (기록된 날만, 이미 값 있으면 유지)
+  Object.keys(LOG).forEach(d=>{if(d>='2026-06-09'&&d<='2026-08-13'){const sl=ssleep(d);if(sl&&!sl.bed)sl.bed='안방 템퍼';}});
+  // 제주도 7/29~31: 기타 (덮어쓰기)
+  ['2026-07-29','2026-07-30','2026-07-31'].forEach(d=>{const sl=ssleep(d);if(sl){sl.bed='기타';sl.bedOther='제주도 단단한 스프링 침대';}});
+  // 8/14~18, 8/25~28: 거실 레스트먼트 토퍼 / 8/19~24: 안방 썰타
+  const rng=(a,b,bed)=>Object.keys(LOG).forEach(d=>{if(d>=a&&d<=b){const sl=ssleep(d);if(sl&&!sl.bed)sl.bed=bed;}});
+  rng('2026-08-14','2026-08-18','거실 레스트먼트 토퍼');
+  rng('2026-08-19','2026-08-24','안방 썰타');
+  rng('2026-08-25','2026-08-28','거실 레스트먼트 토퍼');
+  await persist();
+  try{await storeSet('bed-backfill-v1','1');}catch(e){}
+}
 
 
 let spotsState={left:[],right:[]},tpData={},tpFreq={},tpTouched={},tpTimes={},tpInterp={},curTp="morning";
@@ -1146,6 +1168,7 @@ function gatherCare(){return{
       monitor:num('hgMonitor'),meeting:num('hgMeeting'),missedBreaks:num('hgMissed')},
     exercise:{list:exerciseState.map(x=>({types:(x.types||(x.type?[x.type]:[])),time:x.time,end:x.end||'',min:x.min})),bad:document.getElementById('hgBadEx').checked},
     sleep:{pillow:document.getElementById('slpPillow').value,pillowOther:document.getElementById('slpPillowOther').value.trim(),
+      bed:document.getElementById('slpBed').value,bedOther:document.getElementById('slpBedOther').value.trim(),
       sleepAt:document.getElementById('slpSleep').value,wakeAt:document.getElementById('slpWake').value,
       minutes:sleepMinutes(),tags:[...sleepTags],level:sleepLevel},
     daily:{events:eventState.map(v=>({note:v.note,start:v.start||'',end:v.end||'',score:+v.score||0}))},
@@ -1275,7 +1298,7 @@ function careHasContent(c){if(!c)return false;const mv=c.move,wk=c.work||{},ex=c
   const moveHas=Array.isArray(mv)?mv.length:(mv&&(mv.drive||mv.bus||mv.subway||mv.taxi));
   const exHas=Array.isArray(ex.list)?ex.list.length:(ex.walk||ex.treadmill);
   return !!(moveHas||wk.commute||wk.inAt||wk.outAt||wk.monitor||wk.meeting||wk.missedBreaks||exHas||ex.bad||
-    sl.pillow||sl.sleepAt||sl.wakeAt||(sl.tags&&sl.tags.length)||sl.level||
+    sl.pillow||sl.bed||sl.sleepAt||sl.wakeAt||(sl.tags&&sl.tags.length)||sl.level||
     dl.headDown||dl.headDownMany||dl.badEvent||(Array.isArray(dl.events)&&dl.events.length)||(Array.isArray(c.rest)&&c.rest.length)||
     c.sneeze||(c.cough&&(c.cough.total||(c.cough.zaps&&c.cough.zaps.length)||c.cough.zap)));}
 function hasContent(e){return (e.spots.left.length||e.spots.right.length||Object.keys(e.timepoints).length||
@@ -1319,6 +1342,8 @@ function fillForm(e){e=e||{};
   exSel=[];buildExTypes();renderExList();document.getElementById('hgBadEx').checked=!!ex.bad;
   document.getElementById('slpPillow').value=sl.pillow||"";document.getElementById('slpPillowOther').value=sl.pillowOther||"";
   document.getElementById('pillowOtherWrap').style.display=(sl.pillow==='기타')?'inline-flex':'none';
+  document.getElementById('slpBed').value=sl.bed||"";document.getElementById('slpBedOther').value=sl.bedOther||"";
+  document.getElementById('bedOtherWrap').style.display=(sl.bed==='기타')?'inline-flex':'none';
   document.getElementById('slpSleep').value=sl.sleepAt||"";document.getElementById('slpWake').value=sl.wakeAt||"";
   sleepTags=Array.isArray(sl.tags)?[...sl.tags]:[];sleepLevel=sl.level||"";renderSleepChips();calcSleepTotal();
   restState=Array.isArray(c.rest)?c.rest.map(r=>({time:r.time||"",end:r.end||"",min:r.min||0})):[];renderRestList();
@@ -1645,7 +1670,7 @@ function careDetailHtml(c){if(!careHasContent(c))return "";
   if(work.length)parts.push(`<b>업무</b> ${work.join(", ")}`);
   const exr=exListStr(c);if(ex.bad)exr.push("목에 안 좋은 운동");
   if(exr.length)parts.push(`<b>운동</b> ${exr.join(", ")}`);
-  const sb=[];const pil=sl.pillow==='기타'?(sl.pillowOther||'기타'):sl.pillow;if(pil)sb.push("베개 "+pil.replace(/</g,'&lt;'));
+  const sb=[];const pil=sl.pillow==='기타'?(sl.pillowOther||'기타'):sl.pillow;if(pil)sb.push("베개 "+pil.replace(/</g,'&lt;'));const bed=sl.bed==='기타'?(sl.bedOther||'기타'):sl.bed;if(bed)sb.push("침대 "+bed.replace(/</g,'&lt;'));
   if(sl.sleepAt||sl.wakeAt)sb.push((sl.sleepAt||"?")+"~"+(sl.wakeAt||"?")+(sl.minutes!=null?(" ("+fmtSleep(sl.minutes)+")"):""));
   if(sl.level)sb.push("질 "+sl.level);if(sl.tags&&sl.tags.length)sb.push(sl.tags.join("/"));
   if(sb.length)parts.push(`<b>수면</b> ${sb.join(" · ")}`);
@@ -1667,7 +1692,7 @@ function careText(c){if(!careHasContent(c))return "";const wk=c.work||{},ex=c.ex
   if(work.length)lines.push("    업무: "+work.join(", "));
   const exr=exListStr(c);if(ex.bad)exr.push("목에 안 좋은 운동");
   if(exr.length)lines.push("    운동: "+exr.join(", "));
-  const sb=[];const pil=sl.pillow==='기타'?(sl.pillowOther||'기타'):sl.pillow;if(pil)sb.push("베개 "+pil);
+  const sb=[];const pil=sl.pillow==='기타'?(sl.pillowOther||'기타'):sl.pillow;if(pil)sb.push("베개 "+pil);const bed=sl.bed==='기타'?(sl.bedOther||'기타'):sl.bed;if(bed)sb.push("침대 "+bed);
   if(sl.sleepAt||sl.wakeAt)sb.push((sl.sleepAt||"?")+"~"+(sl.wakeAt||"?")+(sl.minutes!=null?(" "+fmtSleep(sl.minutes)):""));
   if(sl.level)sb.push("질 "+sl.level);if(sl.tags&&sl.tags.length)sb.push(sl.tags.join("/"));
   if(sb.length)lines.push("    수면: "+sb.join(" · "));
@@ -1798,6 +1823,9 @@ async function init(){buildReferred();bindFlags();ensureTp();
   document.getElementById('slpPillow').addEventListener('change',e=>{
     document.getElementById('pillowOtherWrap').style.display=(e.target.value==='기타')?'inline-flex':'none';
     scheduleAutosave();renderCareScore();});
+  document.getElementById('slpBed').addEventListener('change',e=>{
+    document.getElementById('bedOtherWrap').style.display=(e.target.value==='기타')?'inline-flex':'none';
+    scheduleAutosave();renderCareScore();});
   document.querySelectorAll('#slpTags .qchip').forEach(b=>b.onclick=()=>{
     const t=b.dataset.t;const i=sleepTags.indexOf(t);if(i>=0)sleepTags.splice(i,1);else sleepTags.push(t);
     renderSleepChips();scheduleAutosave();renderCareScore();});
@@ -1824,6 +1852,7 @@ async function init(){buildReferred();bindFlags();ensureTp();
   };
   await loadLog();
   if(migrateTimepoints())await persist();
+  await backfillBeds();
   selectedDate=todayStr();loadDate();refreshTrend();
   // auto-reconnect to Drive if previously connected
   let wasConnected=false;try{wasConnected=localStorage.getItem("drive-connected")==="1";}catch(e){}
