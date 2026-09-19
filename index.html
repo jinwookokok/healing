@@ -381,14 +381,26 @@
               <label style="display:flex;align-items:center;gap:4px;font-size:11.5px;color:var(--muted);cursor:pointer"><input type="checkbox" class="rangeToggle" style="width:14px;height:14px"> 범위</label>
               <label style="display:flex;align-items:center;gap:4px;font-size:11.5px;color:var(--muted);cursor:pointer"><input type="checkbox" id="careToggle" style="width:14px;height:14px"> 척추위생 점수</label>
               <label style="display:flex;align-items:center;gap:4px;font-size:11.5px;color:var(--muted);cursor:pointer"><input type="checkbox" id="refToggle" style="width:14px;height:14px"> 아침 연관통</label>
+              <label style="display:flex;align-items:center;gap:4px;font-size:11.5px;color:var(--muted);cursor:pointer"><input type="checkbox" id="medToggle" checked style="width:14px;height:14px"> 약 복용</label>
             </div>
           </div>
           <div class="viewtabs" id="tpView">
             <button data-v="total" class="on">하루(평균)</button><button data-v="morning">기상직후</button><button data-v="am2">아침</button><button data-v="forenoon">오전중</button><button data-v="afternoon">낮</button><button data-v="evening">오후·밤</button><button data-v="night">취침전</button>
           </div>
           <p class="hint">손별 방사통 강도 추세입니다. 켤 수 있는 겹쳐보기: <b>범위</b>(아픈 부위 개수), <b>척추위생 점수</b>(초록), <b>아침 연관통</b>(보라). 척추위생·연관통 선은 오르내림(추세)만 비교하도록 크기를 맞춘 것이라 실제 값은 아닙니다. 주의: 척추위생 점수는 높을수록 좋음이라, 만약 도움이 된다면 방사통과 <b>반대로</b> 움직입니다. 겹쳐 움직여도 인과의 증명은 아니며, 효과는 며칠 시차로 나타날 수 있습니다. 왼손=실선, 오른손=점선.</p>
-          <div class="legend"><span><i style="background:#C2622F"></i>왼손 강도</span><span><i style="background:#3B6EA5;border-top:2px dashed #3B6EA5;height:0;width:18px"></i>오른손 강도</span><span><i style="background:#C2622F;opacity:.35"></i>범위</span><span><i style="background:#2F8F7E;opacity:.4"></i>척추위생</span><span><i style="background:#9B6BC7;opacity:.4"></i>아침 연관통</span></div>
+          <div class="legend"><span><i style="background:#C2622F"></i>왼손 강도</span><span><i style="background:#3B6EA5;border-top:2px dashed #3B6EA5;height:0;width:18px"></i>오른손 강도</span><span><i style="background:#C2622F;opacity:.35"></i>범위</span><span><i style="background:#2F8F7E;opacity:.4"></i>척추위생</span><span><i style="background:#9B6BC7;opacity:.4"></i>아침 연관통</span><span><i style="background:#C99A2E;opacity:.4"></i>약 복용 기간(띠)</span></div>
           <svg id="tpChart" viewBox="0 0 640 220"></svg>
+          <details class="moretrends" style="margin-top:8px">
+            <summary>약 복용 기간 입력 · 그래프에 옅은 띠로 표시</summary>
+            <p class="hint" style="margin-top:8px">소염진통제·스테로이드 등 방사통에 영향 줄 수 있는 약의 복용 시작·종료일을 넣어두면, 증상 강도 추세 그래프에 옅은 색 띠로 표시됩니다. 그 시기 방사통이 약 때문에 낮은 건지 구분하는 데 도움이 됩니다.</p>
+            <div class="spasmrow">
+              <div class="field" style="flex:1 1 140px"><label>약 이름</label><input type="text" id="medName" placeholder="예: 펠렉스(소염진통제)"></div>
+              <div class="field" style="flex:0 0 130px"><label>시작일</label><input type="date" id="medStart"></div>
+              <div class="field" style="flex:0 0 130px"><label>종료일</label><input type="date" id="medEnd"></div>
+              <button class="btn ghost" id="medAdd" style="width:auto;padding:9px 14px">추가</button>
+            </div>
+            <div class="spasmlist" id="medList"></div>
+          </details>
         </div>
       <div class="card" style="margin-top:12px">
         <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:4px">
@@ -757,7 +769,7 @@
 </div>
 
 <script>
-const APP_VERSION="5.8";
+const APP_VERSION="5.9";
 const LOCS=[
   {n:"목",r:1},{n:"어깨",r:2},{n:"견갑",r:2},{n:"위팔",r:3},{n:"팔꿈치",r:4},{n:"아래팔",r:5},
   {n:"손목",r:6},{n:"손등",r:7},{n:"손바닥",r:7},{n:"손날(척골측)",r:7},
@@ -907,6 +919,10 @@ async function loadLog(){let v=await storeGet(STORE_KEY);if(v){try{LOG=JSON.pars
   for(const k of LEGACY_KEYS){const lv=await storeGet(k);if(lv){try{LOG=JSON.parse(lv);await storeSet(STORE_KEY,lv);return;}catch(e){}}}LOG={};}
 async function persist(){const ok=await storeSet(STORE_KEY,JSON.stringify(LOG));storageOK=ok;
   document.getElementById('storeWarn').classList.toggle('show',!ok);scheduleDrivePush();return ok;}
+let medPeriods=[];const MED_COLORS=['#C99A2E','#7BA05B','#B0714A','#5B8FA0','#9B6BC7','#8A8F98'];
+function medColor(i){return MED_COLORS[i%MED_COLORS.length];}
+async function loadMeds(){try{const v=await storeGet('med-periods-v1');medPeriods=v?(JSON.parse(v)||[]):[];}catch(e){medPeriods=[];}}
+async function saveMeds(){try{await storeSet('med-periods-v1',JSON.stringify(medPeriods));}catch(e){}}
 async function backfillBeds(){
   let done=false;try{done=(await storeGet('bed-backfill-v1'))==='1';}catch(e){}
   if(done)return;
@@ -927,7 +943,7 @@ async function backfillBeds(){
 
 let spotsState={left:[],right:[]},tpData={},tpFreq={},tpTouched={},tpTimes={},tpInterp={},curTp="morning";
 let spasmState=[];
-let tpViewMode='total',rangeViewMode='total',dayCurveDay='',dayCurveInterp=true,avgRangeDays=14,showRange=false,showCare=false,showRef=false;
+let tpViewMode='total',rangeViewMode='total',dayCurveDay='',dayCurveInterp=true,avgRangeDays=14,showRange=false,showCare=false,showRef=false,showMed=true;
 function scaleToAxis(arr,axisMax){let mn=Infinity,mx=-Infinity;arr.forEach(v=>{if(v!=null){if(v<mn)mn=v;if(v>mx)mx=v;}});
   if(mx===-Infinity)return arr.slice();
   if(mx===mn)return arr.map(v=>v==null?null:axisMax*0.5);
@@ -1396,7 +1412,7 @@ function farRankForDay(e,side){if(sideNone(e,side))return 0;const spots=((e.spot
 function dayPeak(e,side){const spots=((e.spots||{})[side])||[];let p=0;
   spots.forEach(s=>Object.values(e.timepoints||{}).forEach(tp=>{const v=(tp.vals||{})[s.id];if(v>p)p=v;}));return p;}
 
-function lineChart(svgId,series,yMax,rankLabels,xLabels,yMin,eventFlags,markIdx){
+function lineChart(svgId,series,yMax,rankLabels,xLabels,yMin,eventFlags,markIdx,dateBands){
   yMin=yMin||0;
   const svg=document.getElementById(svgId);const vb=svg.getAttribute('viewBox').split(' ');const W=+vb[2],H=+vb[3];
   const padL=44,padR=16,padT=14,padB=26;svg.innerHTML="";
@@ -1405,6 +1421,13 @@ function lineChart(svgId,series,yMax,rankLabels,xLabels,yMin,eventFlags,markIdx)
   const x=i=>N===1?(padL+(W-padL-padR)/2):padL+i*(W-padL-padR)/(N-1);
   const span=(yMax-yMin)||1;
   const y=v=>padT+(1-(v-yMin)/span)*(H-padT-padB);
+  // 약 복용 기간 배경 띠 (날짜 기준, xLabels 없는 다일 추세 차트에만)
+  if(dateBands&&dateBands.length&&!xLabels){const dts2=sortedDates();let bg="";
+    const gap=N>1?(x(1)-x(0)):(W-padL-padR);
+    dateBands.forEach(b=>{let s=-1,e=-1;for(let i=0;i<dts2.length;i++){if(dts2[i]>=b.start&&dts2[i]<=b.end){if(s<0)s=i;e=i;}}
+      if(s<0)return;let x1=x(s)-gap/2,x2=x(e)+gap/2;x1=Math.max(padL,x1);x2=Math.min(W-padR,x2);
+      bg+=`<rect x="${x1}" y="${padT}" width="${Math.max(2,x2-x1)}" height="${H-padT-padB}" fill="${b.color||'#C99A2E'}" opacity="0.13"/>`;});
+    if(bg)svg.insertAdjacentHTML('beforeend',bg);}
   let g="";const step=Math.max(1,Math.ceil(span/4));
   for(let k=yMin;k<=yMax;k+=step){const yy=y(k);g+=`<line x1="${padL}" y1="${yy}" x2="${W-padR}" y2="${yy}" stroke="${k===0&&yMin<0?'#D8DEDC':'#EEF1F0'}"/>`;
     g+=`<text x="${padL-7}" y="${yy+4}" text-anchor="end" fill="#A7B2AE" font-size="11">${rankLabels?(RANK_LABEL[k]||k):k}</text>`;}
@@ -1561,6 +1584,20 @@ function renderDayAvg(){
   series.push({color:'#C2622F',data:L},{color:'#3B6EA5',dash:true,data:R});
   lineChart('dayAvgChart',series,mx,false,short);
 }
+function renderMedList(){const box=document.getElementById('medList');if(!box)return;box.innerHTML="";
+  if(!medPeriods.length){box.innerHTML='<div style="font-size:12px;color:var(--faint)">입력된 약 복용 기간 없음</div>';return;}
+  medPeriods.forEach((m,i)=>{const d=document.createElement('div');d.className='spasmitem';
+    const col=medColor(i);
+    d.innerHTML=`<span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:${col};margin-right:6px"></span><span style="font-weight:600">${(m.name||'약').replace(/</g,'&lt;')}</span><span style="color:var(--muted)">${m.start} ~ ${m.end}</span><button class="si-x">×</button>`;
+    d.querySelector('.si-x').onclick=()=>{medPeriods.splice(i,1);saveMeds();renderMedList();drawCharts();};box.appendChild(d);});}
+function addMed(){const name=document.getElementById('medName').value.trim();
+  const s=document.getElementById('medStart').value,e=document.getElementById('medEnd').value;
+  if(!s||!e){alert('시작일과 종료일을 모두 입력하세요.');return;}
+  if(s>e){alert('종료일이 시작일보다 빠릅니다.');return;}
+  medPeriods.push({name:name||'약',start:s,end:e});
+  medPeriods.sort((a,b)=>a.start<b.start?-1:1);
+  document.getElementById('medName').value="";document.getElementById('medStart').value="";document.getElementById('medEnd').value="";
+  saveMeds();renderMedList();drawCharts();}
 function drawCharts(){const dts=sortedDates();
   ['dayCurveChart','dayAvgChart','farChart','tpChart','rangeChart','careScoreChart','refChart'].forEach(fitVB);
   fitVBh('dayDetailChart',320);renderDayDetail();
@@ -1597,7 +1634,8 @@ function drawCharts(){const dts=sortedDates();
     tpSeries.push({color:'#2F8F7E',faint:true,data:scaleToAxis(care,tpMax)});}
   if(showRef){const ref=dts.map(d=>morningRefSum(LOG[d]||{}));
     tpSeries.push({color:'#9B6BC7',faint:true,data:scaleToAxis(ref,tpMax)});}
-  lineChart('tpChart',tpSeries,tpMax,false,null,null,evFlags,selIdx);
+  const medBands=(showMed?medPeriods:[]).map((m,i)=>({start:m.start,end:m.end,color:medColor(i)}));
+  lineChart('tpChart',tpSeries,tpMax,false,null,null,evFlags,selIdx,medBands);
   // 증상 범위 추세 (선택 시점)
   const rv=rangeViewMode;
   let cntMax=4;dts.forEach(d=>['left','right'].forEach(sd=>{const c=sideCountForView(LOG[d],sd,rv);if(c!=null&&c>cntMax)cntMax=c;}));
@@ -1813,6 +1851,8 @@ async function init(){buildReferred();bindFlags();ensureTp();
     document.querySelectorAll('.rangeToggle').forEach(x=>{x.checked=showRange;});drawCharts();};});
   document.getElementById('careToggle').onchange=e=>{showCare=e.target.checked;drawCharts();};
   document.getElementById('refToggle').onchange=e=>{showRef=e.target.checked;drawCharts();};
+  document.getElementById('medToggle').onchange=e=>{showMed=e.target.checked;drawCharts();};
+  document.getElementById('medAdd').onclick=addMed;
   let _rz=null;window.addEventListener('resize',()=>{clearTimeout(_rz);_rz=setTimeout(()=>{if(viewMode==='record')drawCharts();},200);});
   document.querySelectorAll('#rangeView button').forEach(b=>b.onclick=()=>{rangeViewMode=b.dataset.v;
     document.querySelectorAll('#rangeView button').forEach(x=>x.classList.toggle('on',x===b));drawCharts();});
@@ -1853,6 +1893,7 @@ async function init(){buildReferred();bindFlags();ensureTp();
   await loadLog();
   if(migrateTimepoints())await persist();
   await backfillBeds();
+  await loadMeds();renderMedList();
   selectedDate=todayStr();loadDate();refreshTrend();
   // auto-reconnect to Drive if previously connected
   let wasConnected=false;try{wasConnected=localStorage.getItem("drive-connected")==="1";}catch(e){}
