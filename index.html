@@ -792,7 +792,7 @@
 </div>
 
 <script>
-const APP_VERSION="6.5";
+const APP_VERSION="6.6";
 const LOCS=[
   {n:"목",r:1},{n:"어깨",r:2},{n:"견갑",r:2},{n:"위팔",r:3},{n:"팔꿈치",r:4},{n:"아래팔",r:5},
   {n:"손목",r:6},{n:"손등",r:7},{n:"손바닥",r:7},{n:"손날(척골측)",r:7},
@@ -1238,7 +1238,7 @@ function gather(){const tp={};TPS.forEach(t=>{if(tpTouched[t.k])tp[t.k]={time:tp
     referred:[...refLevels],refv2:true,
     refExt:{base:refExtBase,events:ovState.map(o=>({note:o.note,parts:[...(o.parts||[])]}))},
     flags:[...document.querySelectorAll('#flags input:checked')].map(c=>c.value),
-    memo:document.getElementById('memo').value.trim(),grat:document.getElementById('grat').value.trim(),learn:document.getElementById('learn').value.trim(),weight:(document.getElementById('weightKg').value!==''?+document.getElementById('weightKg').value:null),spasm:[...spasmState],care:gatherCare(),weather:currentWeather,paint:(function(){var o={};Object.keys(tpPaint).forEach(function(k){var d=tpPaint[k];if(d&&PAINT_NAMES.some(function(n){return (d[n]||[]).length;}))o[k]=d;});return Object.keys(o).length?o:undefined;})(),
+    memo:document.getElementById('memo').value.trim(),grat:document.getElementById('grat').value.trim(),learn:document.getElementById('learn').value.trim(),weight:(document.getElementById('weightKg').value!==''?+document.getElementById('weightKg').value:null),spasm:[...spasmState],care:gatherCare(),weather:currentWeather,paint:(function(){var o={};Object.keys(tpPaint).forEach(function(k){var d=tpPaint[k];if(d&&PAINT_NAMES.some(function(n){return (d[n]||[]).length;}))o[k]=d;});if(!Object.keys(o).length)return undefined;var c=compressPaintObj(o);return Object.keys(c).length?c:undefined;})(),
     none:{left:document.getElementById('noneLeft').checked,right:document.getElementById('noneRight').checked},tp6:true,savedAt:new Date().toISOString()};}
 function num(id){const v=parseFloat(document.getElementById(id).value);return isNaN(v)?0:v;}
 let sleepLevel="";let sleepTags=[];
